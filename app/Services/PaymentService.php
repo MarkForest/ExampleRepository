@@ -6,15 +6,15 @@ use App\Contracts\Repositories\AccountRepositoryInterface;
 use App\Contracts\Repositories\PaymentRepositoryInterface;
 use App\DTO\Payment\CreatePaymentDTO;
 use App\Events\Payment\PaymentCompletedEvent;
-use App\Models\Account;
 use App\Models\Payment;
 use Illuminate\Support\Facades\DB;
+use RuntimeException;
 
-final class PaymentService
+final readonly class PaymentService
 {
     public function __construct(
-        private readonly PaymentRepositoryInterface $paymentRepository,
-        private readonly AccountRepositoryInterface $accountRepository,
+        private PaymentRepositoryInterface $paymentRepository,
+        private AccountRepositoryInterface $accountRepository,
     ) {}
 
     /**
@@ -23,35 +23,42 @@ final class PaymentService
      */
     public function processPayment(CreatePaymentDTO $createPaymentDTO): ?Payment
     {
-        /** @var Account|null $account */
-        $account = Account::query()->find($createPaymentDTO->getAccountId());
+        $account = $this->accountRepository->findById($createPaymentDTO->getAccountId());
         if ($account === null) {
-            return null;
+            throw new RuntimeException('Account not found.');
+        }
+        if ($account->balance < (float) $createPaymentDTO->getAmount()) {
+            throw new RuntimeException('Insufficient funds.');
         }
 
-        // Розрахунок комісії тут же
-        $commissionRate = $createPaymentDTO->getAmount() > 1000 ? 0.01 : 0.0;
-        $commission = $createPaymentDTO->getAmount() * $commissionRate;
+        $moneyObject = $createPaymentDTO->getMoneyObject();
+        $commission = $moneyObject->isGreaterThan('1000') ? 0.01 : 0.0;
+        $createPaymentDTO->setMoneyObject($moneyObject->withCommission($commission));
 
-        // Транзакція БД + створення платежу + оновлення балансу в контролері
         /** @var Payment $payment */
-        $payment = DB::transaction(static function () use (
-            $createPaymentDTO,
-            $account, $commission
-        ): Payment {
-            $payment = $this->paymentRepository->create($createPaymentDTO->toArray());
+        $payment = DB::transaction(function () use ($createPaymentDTO, $account,
+            $commission): Payment {
+            $payment = $this->paymentRepository->create([
+                'account_id' => $account->id,
+                'amount' => $createPaymentDTO->getAmount(),
+                'currency' => $createPaymentDTO->getCurrency(),
+                'description' => $createPaymentDTO->getDescription(),
+                'commission' => $commission,
+                'status' => 'completed',
+            ]);
 
-            $amount = $createPaymentDTO->getAmount() + $commission;
-            $this->accountRepository->decrementBalance($account->id, (string) $amount);
+            $this->accountRepository->decrementBalance(
+                $account->id,
+                (string)($createPaymentDTO->getAmount() + $commission)
+            );
 
             return $payment;
         });
 
-        // Подія напряму з контролера
         event(new PaymentCompletedEvent(
             $payment->id,
             $payment->account_id,
-            (string)$payment->amount,
+            (string) $payment->amount,
             $payment->currency
         ));
 

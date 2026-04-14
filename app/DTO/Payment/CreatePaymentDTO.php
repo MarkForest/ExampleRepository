@@ -3,12 +3,12 @@
 namespace App\DTO\Payment;
 
 use App\DTO\Contracts\BaseDTOInterface;
+use App\ValueObjects\MoneyObject;
 
 final class CreatePaymentDTO implements BaseDTOInterface
 {
     private ?int $accountId;
-    private ?float $amount;
-    private ?string $currency;
+    public ?MoneyObject $moneyObject;
     private ?string $description;
 
     /**
@@ -20,9 +20,22 @@ final class CreatePaymentDTO implements BaseDTOInterface
     public function __construct($accountId, $amount, $currency, $description)
     {
         $this->accountId = $accountId;
-        $this->amount = $amount;
-        $this->currency = $currency;
+        $this->moneyObject = new MoneyObject($amount, $currency);
         $this->description = $description;
+    }
+
+    /**
+     * @param array $data
+     * @return array
+     */
+    public static function parseData(array $data): array
+    {
+        $accountId = $data['accountId'] ?? $data['account_id'] ?? null;
+        $amount = $data['amount'] ?? null;
+        $currency = $data['currency'] ?? null;
+        $description = $data['description'] ?? null;
+
+        return compact('accountId', 'amount', 'currency', 'description');
     }
 
     /**
@@ -31,12 +44,14 @@ final class CreatePaymentDTO implements BaseDTOInterface
      */
     public static function fromArray(array $data): BaseDTOInterface
     {
-        $accountId = $data['accountId'] ?? $data['account_id'] ?? null;
-        $amount = $data['amount'] ?? null;
-        $currency = $data['currency'] ?? null;
-        $description = $data['description'] ?? null;
+        $parsedData = self::parseData($data);
 
-        return new self($accountId, $amount, $currency, $description);
+        return new self(
+            $parsedData['accountId'],
+            $parsedData['amount'],
+            $parsedData['currency'],
+            $parsedData['description']
+        );
     }
 
     /**
@@ -45,16 +60,25 @@ final class CreatePaymentDTO implements BaseDTOInterface
     public function toArray(): array
     {
         return [
-            'accountId' => $this->accountId,
-            'amount' => $this->amount,
-            'currency' => $this->currency,
-            'description' => $this->description,
+            'accountId' => $this->getAccountId(),
+            'amount' => $this->getAmount(),
+            'currency' => $this->getCurrency(),
+            'description' => $this->getDescription(),
         ];
     }
 
     public static function fromJson(string $json): BaseDTOInterface
     {
-        return new self(json_decode($json, true));
+        $data = json_decode($json, true);
+
+        $parsedData = self::parseData($data);
+
+        return new self(
+            $parsedData['accountId'],
+            $parsedData['amount'],
+            $parsedData['currency'],
+            $parsedData['description']
+        );
     }
 
     public function toJson(): string
@@ -67,6 +91,22 @@ final class CreatePaymentDTO implements BaseDTOInterface
         return $this->accountId;
     }
 
+    /**
+     * @return MoneyObject|null
+     */
+    public function getMoneyObject(): ?MoneyObject
+    {
+        return $this->moneyObject;
+    }
+
+    /**
+     * @param MoneyObject|null $moneyObject
+     */
+    public function setMoneyObject(?MoneyObject $moneyObject): void
+    {
+        $this->moneyObject = $moneyObject;
+    }
+
     public function setAccountId(?int $accountId): void
     {
         $this->accountId = $accountId;
@@ -74,22 +114,22 @@ final class CreatePaymentDTO implements BaseDTOInterface
 
     public function getAmount(): ?float
     {
-        return $this->amount;
+        return $this->moneyObject->amount;
     }
 
     public function setAmount(?float $amount): void
     {
-        $this->amount = $amount;
+        $this->moneyObject->amount = $amount;
     }
 
     public function getCurrency(): ?string
     {
-        return $this->currency;
+        return $this->moneyObject->currency;
     }
 
     public function setCurrency(?string $currency): void
     {
-        $this->currency = $currency;
+        $this->moneyObject->currency = $currency;
     }
 
     public function getDescription(): ?string

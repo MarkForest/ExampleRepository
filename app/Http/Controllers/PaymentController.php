@@ -38,6 +38,6 @@ class PaymentController extends Controller
 
         $this->paymentService->processPayment($createPaymentDTO);
 
-        return redirect()->route('payment.index')->with('success', 'Платіж успішно створено');
+        return response()->json(new PaymentResource($payment));
     }
 }
