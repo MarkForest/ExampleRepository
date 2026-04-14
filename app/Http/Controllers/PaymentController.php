@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\DTO\Payment\CreatePaymentDTO;
 use App\Http\Controllers\AntiPattern\Controller;
 use App\Http\Requests\PaymentStoreRequest;
 use App\Models\Payment;
@@ -32,7 +33,10 @@ class PaymentController extends Controller
 
     public function store(PaymentStoreRequest $request): RedirectResponse
     {
-        $this->paymentService->processPayment($request->validated());
+        /** @var CreatePaymentDTO $createPaymentDTO */
+        $createPaymentDTO = CreatePaymentDTO::fromArray($request->validated());
+
+        $this->paymentService->processPayment($createPaymentDTO);
 
         return redirect()->route('payment.index')->with('success', 'Платіж успішно створено');
     }
