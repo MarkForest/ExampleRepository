@@ -1,6 +1,6 @@
 <?php
 
-namespace App\DTO\Contracts;
+namespace App\Contracts\DTO;
 
 interface BaseDTOInterface
 {

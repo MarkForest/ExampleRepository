@@ -5,10 +5,12 @@ namespace App\Http\Controllers;
 use App\DTO\Payment\CreatePaymentDTO;
 use App\Http\Controllers\AntiPattern\Controller;
 use App\Http\Requests\PaymentStoreRequest;
+use App\Http\Resources\PaymentResource;
 use App\Models\Payment;
 use App\Models\User;
 use App\Services\PaymentService;
 use Illuminate\Contracts\View\View;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 
 class PaymentController extends Controller
@@ -31,12 +33,12 @@ class PaymentController extends Controller
         return view('payment.create', compact('users'));
     }
 
-    public function store(PaymentStoreRequest $request): RedirectResponse
+    public function store(PaymentStoreRequest $request): JsonResponse
     {
         /** @var CreatePaymentDTO $createPaymentDTO */
         $createPaymentDTO = CreatePaymentDTO::fromArray($request->validated());
 
-        $this->paymentService->processPayment($createPaymentDTO);
+        $payment = $this->paymentService->processPayment($createPaymentDTO);
 
         return response()->json(new PaymentResource($payment));
     }

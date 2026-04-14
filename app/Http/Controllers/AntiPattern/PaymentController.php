@@ -2,11 +2,9 @@
 
 namespace App\Http\Controllers\AntiPattern;
 
-use App\Events\Payment\PaymentCompletedEvent;
+use App\Http\Controllers\Controller;
 use App\Models\Account;
-use App\Models\Payment;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 
 class PaymentController extends Controller
 {
@@ -20,12 +18,17 @@ class PaymentController extends Controller
             'description' => ['nullable', 'string', 'max:255'],
         ]);
 
-        return response()->json([
-            'id' => $payment->id,
-            'amount' => $payment->amount,
-            'currency' => $payment->currency,
-            'commission' => $payment->commission,
-            'status' => $payment->status,
-        ]);
+        // Перевірка балансу прямо в контролері
+        /** @var Account|null $account */
+        $account = Account::query()->find($validated['account_id']);
+        if ($account === null) {
+            return response()->json([
+                'message' => 'Account not found',
+            ], 404);
+        }
+
+        
+
+
     }
 }

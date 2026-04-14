@@ -2,7 +2,7 @@
 
 namespace App\DTO\Payment;
 
-use App\DTO\Contracts\BaseDTOInterface;
+use App\Contracts\DTO\BaseDTOInterface;
 use App\ValueObjects\MoneyObject;
 
 final class CreatePaymentDTO implements BaseDTOInterface
