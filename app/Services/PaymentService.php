@@ -61,10 +61,10 @@ final readonly class PaymentService
         });
 
         event(new PaymentCompletedEvent(
-            $payment->id,
-            $payment->account_id,
-            (string) $payment->amount,
-            $payment->currency
+            (int) $payment->id,
+            (string) $payment->account_id,
+            (float) $payment->amount,
+            (string) $payment->currency
         ));
 
         return $payment;
@@ -112,10 +112,10 @@ final readonly class PaymentService
         });
 
         event(new PaymentCompletedEvent(
-            $payment->id,
-            $payment->account_id,
-            (string) $payment->amount,
-            $payment->currency
+            (int) $payment->id,
+            (string) $payment->account_id,
+            (float) $payment->amount,
+            (string) $payment->currency
         ));
 
         return $payment;
@@ -163,10 +163,10 @@ final readonly class PaymentService
         });
 
         event(new PaymentCompletedEvent(
-            $payment->id,
-            $payment->account_id,
-            (string) $payment->amount,
-            $payment->currency
+            (int) $payment->id,
+            (string) $payment->account_id,
+            (float) $payment->amount,
+            (string) $payment->currency
         ));
 
         return $payment;

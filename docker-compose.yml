@@ -12,6 +12,8 @@ services:
       - mysql
       - redis
     working_dir: /var/www/html
+    environment:
+      XDEBUG_MODE: coverage
 
   queue-worker:
     build:

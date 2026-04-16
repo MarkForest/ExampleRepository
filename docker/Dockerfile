@@ -22,6 +22,10 @@ RUN a2enmod rewrite
 RUN pecl install redis \
  && docker-php-ext-enable redis
 
+# Xdebug для покриття коду (PHPUnit --coverage-*)
+RUN pecl install xdebug \
+ && docker-php-ext-enable xdebug
+
 # Робоча директорія
 WORKDIR /var/www/html
 
