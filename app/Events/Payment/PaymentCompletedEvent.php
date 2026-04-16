@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Events\Payment;
 
 use Illuminate\Broadcasting\InteractsWithSockets;
@@ -8,7 +10,9 @@ use Illuminate\Queue\SerializesModels;
 
 class PaymentCompletedEvent
 {
-    use Dispatchable, InteractsWithSockets, SerializesModels;
+    use Dispatchable;
+    use InteractsWithSockets;
+    use SerializesModels;
 
     /**
      * Create a new event instance.

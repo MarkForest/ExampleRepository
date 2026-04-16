@@ -1,8 +1,9 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers\AntiPattern;
 
-use App\Http\Controllers\Controller;
 use App\Models\Account;
 use Illuminate\Http\Request;
 
@@ -27,7 +28,7 @@ class PaymentController extends Controller
             ], 404);
         }
 
-        
+
 
 
     }

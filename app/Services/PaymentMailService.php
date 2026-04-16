@@ -1,8 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Services;
 
 use App\Models\Payment;
+use App\Models\User;
 use Illuminate\Support\Facades\Mail;
 
 class PaymentMailService
@@ -11,8 +14,10 @@ class PaymentMailService
     {
         Mail::raw(
             "Ваш платіж №$payment->id на суму $payment->amount успішно проведений.",
-            function ($message) use ($payment) {
-                $message->to($payment->user()->first()->email)->subject('Payment Confirmation');
+            function ($message) use ($payment): void {
+                /** @var User $user */
+                $user = $payment->user()->first();
+                $message->to($user->email)->subject('Payment Confirmation');
             }
         );
     }

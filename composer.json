@@ -19,6 +19,7 @@
         "laravel/sail": "^1.41",
         "mockery/mockery": "^1.6",
         "nunomaduro/collision": "^8.6",
+        "phpstan/phpstan": "^2.1",
         "phpunit/phpunit": "^11.5.50"
     },
     "autoload": {
@@ -36,6 +37,8 @@
     "scripts": {
         "cs-fix": "php-cs-fixer fix",
         "cs-check": "php-cs-fixer fix --dry-run --diff",
+        "stan": "php -d memory_limit=1G ./vendor/bin/phpstan analyse app",
+
         "setup": [
             "composer install",
             "@php -r \"file_exists('.env') || copy('.env.example', '.env');\"",

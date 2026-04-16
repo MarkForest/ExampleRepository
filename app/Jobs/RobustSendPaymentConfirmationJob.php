@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Jobs;
 
 use App\Models\Payment;
@@ -31,6 +33,7 @@ class RobustSendPaymentConfirmationJob implements ShouldQueue
      */
     public function handle(PaymentMailService $paymentMailService): void
     {
+        /** @var Payment $payment */
         $payment = Payment::query()->find($this->paymentId);
         if ($payment === null) {
             Log::warning('Payment not found for RobustSendPaymentConfirmationJob', [

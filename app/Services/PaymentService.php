@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Services;
 
 use App\Contracts\Repositories\AccountRepositoryInterface;
@@ -36,8 +38,11 @@ final readonly class PaymentService
         $createPaymentDTO->setMoneyObject($moneyObject->withCommission($commission));
 
         /** @var Payment $payment */
-        $payment = DB::transaction(function () use ($createPaymentDTO, $account,
-            $commission): Payment {
+        $payment = DB::transaction(function () use (
+            $createPaymentDTO,
+            $account,
+            $commission
+        ): Payment {
             $payment = $this->paymentRepository->create([
                 'account_id' => $account->id,
                 'amount' => $createPaymentDTO->getAmount(),
@@ -49,7 +54,7 @@ final readonly class PaymentService
 
             $this->accountRepository->decrementBalance(
                 $account->id,
-                (string)($createPaymentDTO->getAmount() + $commission)
+                (string) ($createPaymentDTO->getAmount() + $commission)
             );
 
             return $payment;
@@ -84,8 +89,11 @@ final readonly class PaymentService
         $createPaymentDTO->setMoneyObject($moneyObject->withCommission($commission));
 
         /** @var Payment $payment */
-        $payment = DB::transaction(function () use ($createPaymentDTO, $account,
-            $commission): Payment {
+        $payment = DB::transaction(function () use (
+            $createPaymentDTO,
+            $account,
+            $commission
+        ): Payment {
             $payment = $this->paymentRepository->create([
                 'account_id' => $account->id,
                 'amount' => $createPaymentDTO->getAmount(),
@@ -97,7 +105,7 @@ final readonly class PaymentService
 
             $this->accountRepository->decrementBalance(
                 $account->id,
-                (string)($createPaymentDTO->getAmount() + $commission)
+                (string) ($createPaymentDTO->getAmount() + $commission)
             );
 
             return $payment;
@@ -132,8 +140,11 @@ final readonly class PaymentService
         $createPaymentDTO->setMoneyObject($moneyObject->withCommission($commission));
 
         /** @var Payment $payment */
-        $payment = DB::transaction(function () use ($createPaymentDTO, $account,
-            $commission): Payment {
+        $payment = DB::transaction(function () use (
+            $createPaymentDTO,
+            $account,
+            $commission
+        ): Payment {
             $payment = $this->paymentRepository->create([
                 'account_id' => $account->id,
                 'amount' => $createPaymentDTO->getAmount(),
@@ -145,7 +156,7 @@ final readonly class PaymentService
 
             $this->accountRepository->decrementBalance(
                 $account->id,
-                (string)($createPaymentDTO->getAmount() + $commission)
+                (string) ($createPaymentDTO->getAmount() + $commission)
             );
 
             return $payment;

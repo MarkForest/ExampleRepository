@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\DTO\Payment;
 
 use App\Contracts\DTO\BaseDTOInterface;
@@ -112,14 +114,14 @@ final class CreatePaymentDTO implements BaseDTOInterface
         $this->accountId = $accountId;
     }
 
-    public function getAmount(): ?float
+    public function getAmount(): ?string
     {
         return $this->moneyObject->amount;
     }
 
     public function setAmount(?float $amount): void
     {
-        $this->moneyObject->amount = $amount;
+        $this->moneyObject->amount = (string) $amount;
     }
 
     public function getCurrency(): ?string
