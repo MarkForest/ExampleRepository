@@ -13,6 +13,7 @@ use Illuminate\Notifications\Notifiable;
 
 /**
  * @property string $email
+ * @property int $id
  */
 class User extends Authenticatable
 {

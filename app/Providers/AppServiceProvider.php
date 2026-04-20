@@ -9,6 +9,8 @@ use App\Contracts\Repositories\PaymentRepositoryInterface;
 use App\Repositories\AccountRepository;
 use App\Repositories\PaymentRepository;
 use Illuminate\Support\ServiceProvider;
+use Tests\Mocks\AccountRepositoryMock;
+use Tests\Mocks\PaymentRepositoryMock;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -17,8 +19,13 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        $this->app->bind(PaymentRepositoryInterface::class, PaymentRepository::class);
-        $this->app->bind(AccountRepositoryInterface::class, AccountRepository::class);
+        if ($this->app->environment('testing')) {
+            $this->app->bind(PaymentRepositoryInterface::class, PaymentRepositoryMock::class);
+            $this->app->bind(AccountRepositoryInterface::class, AccountRepositoryMock::class);
+        } else {
+            $this->app->bind(PaymentRepositoryInterface::class, PaymentRepository::class);
+            $this->app->bind(AccountRepositoryInterface::class, AccountRepository::class);
+        }
     }
 
     /**

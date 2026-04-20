@@ -14,6 +14,7 @@ use RuntimeException;
 
 final readonly class PaymentService
 {
+
     public function __construct(
         private PaymentRepositoryInterface $paymentRepository,
         private AccountRepositoryInterface $accountRepository,

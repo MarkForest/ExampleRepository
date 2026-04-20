@@ -20,7 +20,8 @@ final class PaymentCreationService
             $amount,
             $currency
         ): Payment {
-            /** @var Payment $payment */
+
+            /** @var User $user */
             $user = User::query()->first();
             if ($user === null) {
                 $user = User::factory()->create();
