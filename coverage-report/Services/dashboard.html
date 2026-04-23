@@ -61,7 +61,7 @@
        <tr><td><a href="AntiPattern/paymSrv.php.html#11">App\Services\AntiPattern\paymSrv</a></td><td class="text-right">0%</td></tr>
        <tr><td><a href="GoodPattern/PaymentCommissionService.php.html#12">App\Services\GoodPattern\PaymentCommissionService</a></td><td class="text-right">0%</td></tr>
        <tr><td><a href="PaymentMailService.php.html#11">App\Services\PaymentMailService</a></td><td class="text-right">0%</td></tr>
-       <tr><td><a href="PaymentService.php.html#15">App\Services\PaymentService</a></td><td class="text-right">33%</td></tr>
+       <tr><td><a href="PaymentService.php.html#15">App\Services\Api\V1\PaymentService</a></td><td class="text-right">33%</td></tr>
 
        </tbody>
       </table>
@@ -78,7 +78,7 @@
         </tr>
        </thead>
        <tbody>
-       <tr><td><a href="PaymentService.php.html#15">App\Services\PaymentService</a></td><td class="text-right">63</td></tr>
+       <tr><td><a href="PaymentService.php.html#15">App\Services\Api\V1\PaymentService</a></td><td class="text-right">63</td></tr>
        <tr><td><a href="GoodPattern/PaymentCommissionService.php.html#12">App\Services\GoodPattern\PaymentCommissionService</a></td><td class="text-right">20</td></tr>
 
        </tbody>
@@ -120,8 +120,8 @@
        <tr><td><a href="AntiPattern/paymSrv.php.html#13"><abbr title="App\Services\AntiPattern\paymSrv::do">do</abbr></a></td><td class="text-right">0%</td></tr>
        <tr><td><a href="GoodPattern/PaymentCommissionService.php.html#14"><abbr title="App\Services\GoodPattern\PaymentCommissionService::createPaymentWithCommission">createPaymentWithCommission</abbr></a></td><td class="text-right">0%</td></tr>
        <tr><td><a href="PaymentMailService.php.html#13"><abbr title="App\Services\PaymentMailService::sendPaymentConfirmation">sendPaymentConfirmation</abbr></a></td><td class="text-right">0%</td></tr>
-       <tr><td><a href="PaymentService.php.html#78"><abbr title="App\Services\PaymentService::processPayment2">processPayment2</abbr></a></td><td class="text-right">0%</td></tr>
-       <tr><td><a href="PaymentService.php.html#129"><abbr title="App\Services\PaymentService::processPayment3">processPayment3</abbr></a></td><td class="text-right">0%</td></tr>
+       <tr><td><a href="PaymentService.php.html#78"><abbr title="App\Services\Api\V1\PaymentService::processPayment2">processPayment2</abbr></a></td><td class="text-right">0%</td></tr>
+       <tr><td><a href="PaymentService.php.html#129"><abbr title="App\Services\Api\V1\PaymentService::processPayment3">processPayment3</abbr></a></td><td class="text-right">0%</td></tr>
 
        </tbody>
       </table>
@@ -139,8 +139,8 @@
        </thead>
        <tbody>
        <tr><td><a href="GoodPattern/PaymentCommissionService.php.html#14"><abbr title="App\Services\GoodPattern\PaymentCommissionService::createPaymentWithCommission">createPaymentWithCommission</abbr></a></td><td class="text-right">20</td></tr>
-       <tr><td><a href="PaymentService.php.html#78"><abbr title="App\Services\PaymentService::processPayment2">processPayment2</abbr></a></td><td class="text-right">20</td></tr>
-       <tr><td><a href="PaymentService.php.html#129"><abbr title="App\Services\PaymentService::processPayment3">processPayment3</abbr></a></td><td class="text-right">20</td></tr>
+       <tr><td><a href="PaymentService.php.html#78"><abbr title="App\Services\Api\V1\PaymentService::processPayment2">processPayment2</abbr></a></td><td class="text-right">20</td></tr>
+       <tr><td><a href="PaymentService.php.html#129"><abbr title="App\Services\Api\V1\PaymentService::processPayment3">processPayment3</abbr></a></td><td class="text-right">20</td></tr>
 
        </tbody>
       </table>
@@ -237,7 +237,7 @@ $(document).ready(function() {
     chart.yAxis.axisLabel('Cyclomatic Complexity');
 
     d3.select('#classComplexity svg')
-      .datum(getComplexityData([[0,1,"<a href=\"AntiPattern\/paymSrv.php.html#11\">App\\Services\\AntiPattern\\paymSrv<\/a>"],[100,2,"<a href=\"CommissionCalculatorService.php.html#10\">App\\Services\\CommissionCalculatorService<\/a>"],[0,4,"<a href=\"GoodPattern\/PaymentCommissionService.php.html#12\">App\\Services\\GoodPattern\\PaymentCommissionService<\/a>"],[100,3,"<a href=\"PaymentCreationService.php.html#11\">App\\Services\\PaymentCreationService<\/a>"],[0,1,"<a href=\"PaymentMailService.php.html#11\">App\\Services\\PaymentMailService<\/a>"],[33.00970873786408,13,"<a href=\"PaymentService.php.html#15\">App\\Services\\PaymentService<\/a>"]], 'Class Complexity'))
+      .datum(getComplexityData([[0,1,"<a href=\"AntiPattern\/paymSrv.php.html#11\">App\\Services\\AntiPattern\\paymSrv<\/a>"],[100,2,"<a href=\"CommissionCalculatorService.php.html#10\">App\\Services\\CommissionCalculatorService<\/a>"],[0,4,"<a href=\"GoodPattern\/PaymentCommissionService.php.html#12\">App\\Services\\GoodPattern\\PaymentCommissionService<\/a>"],[100,3,"<a href=\"PaymentCreationService.php.html#11\">App\\Services\\PaymentCreationService<\/a>"],[0,1,"<a href=\"PaymentMailService.php.html#11\">App\\Services\\PaymentMailService<\/a>"],[33.00970873786408,13,"<a href=\"PaymentService.php.html#15\">App\\Services\\Api\\V1\\PaymentService<\/a>"]], 'Class Complexity'))
       .transition()
       .duration(500)
       .call(chart);
@@ -261,7 +261,7 @@ $(document).ready(function() {
     chart.yAxis.axisLabel('Method Complexity');
 
     d3.select('#methodComplexity svg')
-      .datum(getComplexityData([[0,1,"<a href=\"AntiPattern\/paymSrv.php.html#13\">App\\Services\\AntiPattern\\paymSrv::do<\/a>"],[100,2,"<a href=\"CommissionCalculatorService.php.html#14\">App\\Services\\CommissionCalculatorService::calculate<\/a>"],[0,4,"<a href=\"GoodPattern\/PaymentCommissionService.php.html#14\">App\\Services\\GoodPattern\\PaymentCommissionService::createPaymentWithCommission<\/a>"],[100,3,"<a href=\"PaymentCreationService.php.html#13\">App\\Services\\PaymentCreationService::createPaymentWithCommission<\/a>"],[0,1,"<a href=\"PaymentMailService.php.html#13\">App\\Services\\PaymentMailService::sendPaymentConfirmation<\/a>"],[100,1,"<a href=\"PaymentService.php.html#18\">App\\Services\\PaymentService::__construct<\/a>"],[97.05882352941177,4,"<a href=\"PaymentService.php.html#27\">App\\Services\\PaymentService::processPayment<\/a>"],[0,4,"<a href=\"PaymentService.php.html#78\">App\\Services\\PaymentService::processPayment2<\/a>"],[0,4,"<a href=\"PaymentService.php.html#129\">App\\Services\\PaymentService::processPayment3<\/a>"]], 'Method Complexity'))
+      .datum(getComplexityData([[0,1,"<a href=\"AntiPattern\/paymSrv.php.html#13\">App\\Services\\AntiPattern\\paymSrv::do<\/a>"],[100,2,"<a href=\"CommissionCalculatorService.php.html#14\">App\\Services\\CommissionCalculatorService::calculate<\/a>"],[0,4,"<a href=\"GoodPattern\/PaymentCommissionService.php.html#14\">App\\Services\\GoodPattern\\PaymentCommissionService::createPaymentWithCommission<\/a>"],[100,3,"<a href=\"PaymentCreationService.php.html#13\">App\\Services\\PaymentCreationService::createPaymentWithCommission<\/a>"],[0,1,"<a href=\"PaymentMailService.php.html#13\">App\\Services\\PaymentMailService::sendPaymentConfirmation<\/a>"],[100,1,"<a href=\"PaymentService.php.html#18\">App\\Services\\Api\\V1\\PaymentService::__construct<\/a>"],[97.05882352941177,4,"<a href=\"PaymentService.php.html#27\">App\\Services\\Api\\V1\\PaymentService::processPayment<\/a>"],[0,4,"<a href=\"PaymentService.php.html#78\">App\\Services\\Api\\V1\\PaymentService::processPayment2<\/a>"],[0,4,"<a href=\"PaymentService.php.html#129\">App\\Services\\Api\\V1\\PaymentService::processPayment3<\/a>"]], 'Method Complexity'))
       .transition()
       .duration(500)
       .call(chart);

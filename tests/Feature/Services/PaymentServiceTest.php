@@ -1,13 +1,15 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Feature\Services;
 
 use App\Contracts\Repositories\AccountRepositoryInterface;
 use App\Contracts\Repositories\PaymentRepositoryInterface;
-use App\DTO\Payment\CreatePaymentDTO;
+use App\DTO\Api\V1\CreatePaymentDTO;
 use App\Models\Account;
 use App\Models\Payment;
-use App\Services\PaymentService;
+use App\Services\Api\V1\PaymentService;
 use Illuminate\Support\Facades\Event;
 use Mockery;
 use Mockery\Adapter\Phpunit\MockeryPHPUnitIntegration;
@@ -23,10 +25,10 @@ class PaymentServiceTest extends TestCase
         Event::fake();
 
         // Arrange
-        $paymentRepository =
-            Mockery::mock(PaymentRepositoryInterface::class);
-        $accountRepository =
-            Mockery::mock(AccountRepositoryInterface::class);
+        $paymentRepository
+            = Mockery::mock(PaymentRepositoryInterface::class);
+        $accountRepository
+            = Mockery::mock(AccountRepositoryInterface::class);
 
         $accountId = 1;
         $amount = 1500.0;
@@ -77,12 +79,14 @@ class PaymentServiceTest extends TestCase
             ->andReturn(new Payment(array_merge($expectedData, ['id' => $accountId])));
 
 
-        $service = new PaymentService($paymentRepository,
-            $accountRepository);
+        $service = new PaymentService(
+            $paymentRepository,
+            $accountRepository
+        );
 
         $createPaymentDTO = CreatePaymentDTO::fromArray([
             'account_id' => $accountId,
-            'amount' => (string)$amount,
+            'amount' => (string) $amount,
             'currency' => 'UAH',
         ]);
 
@@ -91,15 +95,15 @@ class PaymentServiceTest extends TestCase
 
         // Assert
         self::assertInstanceOf(Payment::class, $payment);
-        self::assertSame(1515.0, (float)$payment->amount);
+        self::assertSame(1515.0, (float) $payment->amount);
     }
 
     public function test_process_payment_throws_exception_when_balance_is_insufficient(): void
     {
-        $paymentRepository =
-            Mockery::mock(PaymentRepositoryInterface::class);
-        $accountRepository =
-            Mockery::mock(AccountRepositoryInterface::class);
+        $paymentRepository
+            = Mockery::mock(PaymentRepositoryInterface::class);
+        $accountRepository
+            = Mockery::mock(AccountRepositoryInterface::class);
 
         $accountId = 1;
         $amount = 1500.0;
@@ -122,12 +126,14 @@ class PaymentServiceTest extends TestCase
             ->shouldReceive('decrementBalance')
             ->never();
 
-        $service = new PaymentService($paymentRepository,
-            $accountRepository);
+        $service = new PaymentService(
+            $paymentRepository,
+            $accountRepository
+        );
 
         $createPaymentDTO = CreatePaymentDTO::fromArray([
             'account_id' => $accountId,
-            'amount' => (string)$amount,
+            'amount' => (string) $amount,
             'currency' => 'UAH',
         ]);
 

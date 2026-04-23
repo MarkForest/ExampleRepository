@@ -1,6 +1,6 @@
 <?php
 
-use App\Http\Controllers\PaymentController;
+use App\Http\Controllers\Api\V1\PaymentController;
 use App\Http\Controllers\SiteController;
 use Illuminate\Support\Facades\Route;
 
@@ -15,3 +15,5 @@ Route::post('/payment', [PaymentController::class, 'store'])
 
 Route::get('/payments', [PaymentController::class, 'index'])
     ->name('payment.index');
+
+

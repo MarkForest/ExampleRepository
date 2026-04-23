@@ -72,7 +72,7 @@
       </tr>
 
       <tr>
-       <td class="danger"><abbr title="App\Services\PaymentService">PaymentService</abbr></td>
+       <td class="danger"><abbr title="App\Services\Api\V1\PaymentService">PaymentService</abbr></td>
        <td class="danger big">       <div class="progress">
          <div class="progress-bar bg-danger" role="progressbar" aria-valuenow="33.01" aria-valuemin="0" aria-valuemax="100" style="width: 33.01%">
            <span class="visually-hidden">33.01% covered (danger)</span>
@@ -123,7 +123,7 @@
       </tr>
 
       <tr>
-       <td class="success">&nbsp;<a href="#27"><abbr title="processPayment(App\DTO\Payment\CreatePaymentDTO $createPaymentDTO): ?App\Models\Payment">processPayment</abbr></a></td>
+       <td class="success">&nbsp;<a href="#27"><abbr title="processPayment(App\DTO\Api\V1\CreatePaymentDTO $createPaymentDTO): ?App\Models\Payment">processPayment</abbr></a></td>
        <td class="success big">       <div class="progress">
          <div class="progress-bar bg-success" role="progressbar" aria-valuenow="97.06" aria-valuemin="0" aria-valuemax="100" style="width: 97.06%">
            <span class="visually-hidden">97.06% covered (success)</span>
@@ -145,7 +145,7 @@
       </tr>
 
       <tr>
-       <td class="danger">&nbsp;<a href="#78"><abbr title="processPayment2(App\DTO\Payment\CreatePaymentDTO $createPaymentDTO): ?App\Models\Payment">processPayment2</abbr></a></td>
+       <td class="danger">&nbsp;<a href="#78"><abbr title="processPayment2(App\DTO\Api\V1\CreatePaymentDTO $createPaymentDTO): ?App\Models\Payment">processPayment2</abbr></a></td>
        <td class="danger big">       <div class="progress">
          <div class="progress-bar bg-danger" role="progressbar" aria-valuenow="0.00" aria-valuemin="0" aria-valuemax="100" style="width: 0.00%">
            <span class="visually-hidden">0.00% covered (danger)</span>
@@ -167,7 +167,7 @@
       </tr>
 
       <tr>
-       <td class="danger">&nbsp;<a href="#129"><abbr title="processPayment3(App\DTO\Payment\CreatePaymentDTO $createPaymentDTO): ?App\Models\Payment">processPayment3</abbr></a></td>
+       <td class="danger">&nbsp;<a href="#129"><abbr title="processPayment3(App\DTO\Api\V1\CreatePaymentDTO $createPaymentDTO): ?App\Models\Payment">processPayment3</abbr></a></td>
        <td class="danger big">       <div class="progress">
          <div class="progress-bar bg-danger" role="progressbar" aria-valuenow="0.00" aria-valuemin="0" aria-valuemax="100" style="width: 0.00%">
            <span class="visually-hidden">0.00% covered (danger)</span>
@@ -202,7 +202,7 @@
     <tr class=" d-flex"><td  class="col-1 text-end"><a id="6" href="#6">6</a></td><td class="col-11 codeLine"></td></tr>
     <tr class=" d-flex"><td  class="col-1 text-end"><a id="7" href="#7">7</a></td><td class="col-11 codeLine"><span class="keyword">use</span><span class="default">&nbsp;</span><span class="default">App\Contracts\Repositories\AccountRepositoryInterface</span><span class="keyword">;</span></td></tr>
     <tr class=" d-flex"><td  class="col-1 text-end"><a id="8" href="#8">8</a></td><td class="col-11 codeLine"><span class="keyword">use</span><span class="default">&nbsp;</span><span class="default">App\Contracts\Repositories\PaymentRepositoryInterface</span><span class="keyword">;</span></td></tr>
-    <tr class=" d-flex"><td  class="col-1 text-end"><a id="9" href="#9">9</a></td><td class="col-11 codeLine"><span class="keyword">use</span><span class="default">&nbsp;</span><span class="default">App\DTO\Payment\CreatePaymentDTO</span><span class="keyword">;</span></td></tr>
+    <tr class=" d-flex"><td  class="col-1 text-end"><a id="9" href="#9">9</a></td><td class="col-11 codeLine"><span class="keyword">use</span><span class="default">&nbsp;</span><span class="default">App\DTO\Api\V1\CreatePaymentDTO</span><span class="keyword">;</span></td></tr>
     <tr class=" d-flex"><td  class="col-1 text-end"><a id="10" href="#10">10</a></td><td class="col-11 codeLine"><span class="keyword">use</span><span class="default">&nbsp;</span><span class="default">App\Events\Payment\PaymentCompletedEvent</span><span class="keyword">;</span></td></tr>
     <tr class=" d-flex"><td  class="col-1 text-end"><a id="11" href="#11">11</a></td><td class="col-11 codeLine"><span class="keyword">use</span><span class="default">&nbsp;</span><span class="default">App\Models\Payment</span><span class="keyword">;</span></td></tr>
     <tr class=" d-flex"><td  class="col-1 text-end"><a id="12" href="#12">12</a></td><td class="col-11 codeLine"><span class="keyword">use</span><span class="default">&nbsp;</span><span class="default">Illuminate\Support\Facades\DB</span><span class="keyword">;</span></td></tr>

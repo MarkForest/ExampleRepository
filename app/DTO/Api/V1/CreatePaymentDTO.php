@@ -2,27 +2,27 @@
 
 declare(strict_types=1);
 
-namespace App\DTO\Payment;
+namespace App\DTO\Api\V1;
 
 use App\Contracts\DTO\BaseDTOInterface;
 use App\ValueObjects\MoneyObject;
 
 final class CreatePaymentDTO implements BaseDTOInterface
 {
-    private ?int $accountId;
+    private ?int $userId;
     public ?MoneyObject $moneyObject;
     private ?string $description;
 
     /**
-     * @param $accountId
+     * @param $userId
      * @param $amount
      * @param $currency
      * @param $description
      */
-    public function __construct($accountId, $amount, $currency, $description)
+    public function __construct($userId, $amount, $currency, $description)
     {
-        $this->accountId = $accountId;
-        $this->moneyObject = new MoneyObject($amount, $currency);
+        $this->userId = $userId;
+        $this->moneyObject = new MoneyObject((string)$amount, $currency);
         $this->description = $description;
     }
 
@@ -32,12 +32,12 @@ final class CreatePaymentDTO implements BaseDTOInterface
      */
     public static function parseData(array $data): array
     {
-        $accountId = $data['accountId'] ?? $data['account_id'] ?? null;
+        $userId = $data['userId'] ?? $data['user_id'] ?? null;
         $amount = $data['amount'] ?? null;
         $currency = $data['currency'] ?? null;
         $description = $data['description'] ?? null;
 
-        return compact('accountId', 'amount', 'currency', 'description');
+        return compact('userId', 'amount', 'currency', 'description');
     }
 
     /**
@@ -49,7 +49,7 @@ final class CreatePaymentDTO implements BaseDTOInterface
         $parsedData = self::parseData($data);
 
         return new self(
-            $parsedData['accountId'],
+            $parsedData['userId'],
             $parsedData['amount'],
             $parsedData['currency'],
             $parsedData['description']
@@ -62,7 +62,7 @@ final class CreatePaymentDTO implements BaseDTOInterface
     public function toArray(): array
     {
         return [
-            'accountId' => $this->getAccountId(),
+            'userId' => $this->getUserId(),
             'amount' => $this->getAmount(),
             'currency' => $this->getCurrency(),
             'description' => $this->getDescription(),
@@ -76,7 +76,7 @@ final class CreatePaymentDTO implements BaseDTOInterface
         $parsedData = self::parseData($data);
 
         return new self(
-            $parsedData['accountId'],
+            $parsedData['userId'],
             $parsedData['amount'],
             $parsedData['currency'],
             $parsedData['description']
@@ -88,9 +88,9 @@ final class CreatePaymentDTO implements BaseDTOInterface
         return json_encode($this->toArray());
     }
 
-    public function getAccountId(): ?int
+    public function getUserId(): ?int
     {
-        return $this->accountId;
+        return $this->userId;
     }
 
     /**
@@ -109,9 +109,9 @@ final class CreatePaymentDTO implements BaseDTOInterface
         $this->moneyObject = $moneyObject;
     }
 
-    public function setAccountId(?int $accountId): void
+    public function setUserId(?int $userId): void
     {
-        $this->accountId = $accountId;
+        $this->userId = $userId;
     }
 
     public function getAmount(): ?string

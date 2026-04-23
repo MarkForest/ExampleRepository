@@ -1,11 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Feature\Services;
 
-use App\DTO\Payment\CreatePaymentDTO;
-use App\Services\PaymentService;
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Foundation\Testing\WithFaker;
+use App\DTO\Api\V1\CreatePaymentDTO;
+use App\Services\Api\V1\PaymentService;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Event;
 use RuntimeException;
@@ -29,7 +29,7 @@ class PaymentServiceWithMocksTest extends TestCase
 
         $createPaymentDTO = CreatePaymentDTO::fromArray([
             'account_id' => $accountId,
-            'amount' => (string)$amount,
+            'amount' => (string) $amount,
             'currency' => 'UAH',
         ]);
 
@@ -58,14 +58,14 @@ class PaymentServiceWithMocksTest extends TestCase
 
         $createPaymentDTO = CreatePaymentDTO::fromArray([
             'account_id' => $accountId,
-            'amount' => (string)$amount,
+            'amount' => (string) $amount,
             'currency' => 'UAH',
         ]);
 
         $payment = $service->processPayment($createPaymentDTO);
 
         self::assertNotNull($payment);
-        self::assertSame(1515.0, (float)$payment->amount);
+        self::assertSame(1515.0, (float) $payment->amount);
 
         $createdPayloads = PaymentRepositoryMock::createdPayloads();
         self::assertCount(1, $createdPayloads);
