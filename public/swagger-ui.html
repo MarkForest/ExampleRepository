@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Swagger UI</title>
+  <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist/swagger-ui.css" />
+</head>
+<body>
+  <div id="swagger-ui"></div>
+  <script src="https://unpkg.com/swagger-ui-dist/swagger-ui-bundle.js"></script>
+  <script>
+    SwaggerUIBundle({
+      url: "/openapi.yaml",
+      dom_id: "#swagger-ui",
+      presets: [SwaggerUIBundle.presets.apis, SwaggerUIBundle.SwaggerUIStandalonePreset],
+      layout: "BaseLayout",
+    });
+  </script>
+</body>
+</html>
+
+
+<!--  darkaonline/l5-swagger -->
+
+<!-- docker compose exec php composer require darkaonline/l5-swagger -->
+
+<!-- docker compose exec php php artisan vendor:publish --provider "L5Swagger\L5SwaggerServiceProvider" -->
+
+<!-- docker compose exec php php artisan config:clear -->
+
+
+<!-- http://laravel.test/api/documentation -->

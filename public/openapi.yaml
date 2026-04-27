@@ -1,0 +1,206 @@
+openapi: 3.0.3
+info:
+  title: Financial API — Payments
+  description: >
+    Lesson 7.3 demo: формалізований OpenAPI-контракт для ресурсу Payments.
+    Кожен ендпоінт описаний разом із схемами запиту/відповіді та помилок.
+  version: 1.0.0
+
+servers:
+  - url: http://127.0.0.1:8000
+    description: Local dev server
+
+tags:
+  - name: Payments
+    description: Операції з платежами
+
+paths:
+  /api/v1/payments:
+    get:
+      summary: List payments (paginated)
+      tags: [Payments]
+      responses:
+        '200':
+          description: Paginated list of payments
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Payment'
+
+    post:
+      summary: Create a new payment
+      tags: [Payments]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePaymentRequest'
+            example:
+              account_id: 10
+              amount: "250.00"
+              currency: USD
+              description: Оплата рахунку №123
+      responses:
+        '201':
+          description: Payment created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Payment'
+              example:
+                data:
+                  id: 123
+                  account_id: 10
+                  amount: "250.00"
+                  currency: USD
+                  description: Оплата рахунку №123
+                  status: processed
+                  created_at: "2026-04-23 10:00:00"
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+              example:
+                message: Validation error Custom
+                errors:
+                  account_id: ["The account id field is required."]
+                  amount: ["The amount field is required."]
+                  currency: ["The currency field is required."]
+
+  /api/v1/payments/{id}:
+    get:
+      summary: Get payment by ID
+      tags: [Payments]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          description: Payment identifier
+          example: 123
+      responses:
+        '200':
+          description: Payment details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Payment'
+        '404':
+          description: Payment not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
+              example:
+                message: Record not found Custom
+
+    delete:
+      summary: Delete a payment
+      tags: [Payments]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Payment deleted successfully
+        '404':
+          description: Payment not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
+# Схема вхідного запиту
+components:
+  schemas:
+    CreatePaymentRequest:
+      type: object
+      required:
+        - account_id
+        - amount
+        - currency
+      properties:
+        account_id:
+          type: integer
+          description: ID of the account to debit
+          example: 10
+        amount:
+          type: string
+          pattern: '^\d+(\.\d{1,2})?$'
+          description: Positive amount with up to 2 decimal places
+          example: "250.00"
+        currency:
+          type: string
+          enum: [UAH, USD, EUR]
+          example: USD
+        description:
+          type: string
+          maxLength: 500
+          nullable: true
+          example: Оплата рахунку №123
+
+    Payment:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 123
+        account_id:
+          type: integer
+          nullable: true
+          example: 10
+        amount:
+          type: string
+          example: "250.00"
+        currency:
+          type: string
+          example: USD
+        description:
+          type: string
+          nullable: true
+          example: Оплата рахунку №123
+        status:
+          type: string
+          enum: [pending, processed, completed, failed]
+          example: processed
+        created_at:
+          type: string
+          format: date-time
+          example: "2026-04-23 10:00:00"
+
+    ValidationError:
+      type: object
+      properties:
+        message:
+          type: string
+          example: Validation error Custom
+        errors:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              type: string
+
+    NotFoundError:
+      type: object
+      properties:
+        message:
+          type: string
+          example: Record not found Custom
