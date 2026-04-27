@@ -1,7 +1,7 @@
 <?php
 
 use App\Exceptions\Api\V1\InsufficientFundsException;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
+use App\Http\Middleware\AssignCorrelationId;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Foundation\Application;
@@ -17,7 +17,9 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        //
+        $middleware->api(prepend: [
+            AssignCorrelationId::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->render(function (ValidationException $e, Request $request) {

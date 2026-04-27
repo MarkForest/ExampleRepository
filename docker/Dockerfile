@@ -10,7 +10,7 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Встановлення розширень PHP для роботи з базами даних
-RUN docker-php-ext-install pdo pdo_mysql pcntl
+RUN docker-php-ext-install pdo pdo_mysql pcntl bcmath
 
 # Встановлення Composer з офіційного образу
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
