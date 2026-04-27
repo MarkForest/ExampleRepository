@@ -6,30 +6,32 @@ namespace App\Http\Requests\Api\V1\Payment;
 
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Support\Facades\App;
 
 class PaymentStoreRequest extends FormRequest
 {
-    /**
-     * Determine if the user is authorized to make this request.
-     */
     public function authorize(): bool
     {
         return true;
     }
 
     /**
-     * Get the validation rules that apply to the request.
-     *
      * @return array<string, ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {
         return [
-            'user_id' => 'required|exists:users,id',
-            'amount' => 'required|numeric|min:0',
-            'status' => 'required|in:pending,completed,failed',
-            'currency' => 'required|in:USD,EUR,UAH',
+            'account_id' => ['required', 'integer', 'exists:accounts,id'],
+            'amount'     => ['required', 'regex:/^\d+(\.\d{1,2})?$/', 'numeric', 'min:0.01'],
+            'currency'   => ['required', 'string', 'in:USD,EUR,UAH'],
+            'description' => ['nullable', 'string', 'max:500'],
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'amount.regex' => 'The amount must be a positive number with up to 2 decimal places.',
+            'amount.min'   => 'The amount must be greater than zero.',
         ];
     }
 }

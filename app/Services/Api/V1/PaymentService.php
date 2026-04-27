@@ -55,7 +55,33 @@ final readonly class PaymentService
         return $payment;
     }
 
-    public function deletePayment(Payment $payment)
+    public function findById(int $id): ?Payment
+    {
+        return $this->paymentRepository->findById($id);
+    }
+
+    /**
+     * Create a payment from validated API request data (Lesson 7.3).
+     * Uses account_id — does not require authenticated user.
+     */
+    public function createPayment(CreatePaymentDTO $dto): Payment
+    {
+        /** @var Payment $payment */
+        $payment = DB::transaction(function () use ($dto): Payment {
+            return $this->paymentRepository->create([
+                'account_id'  => $dto->getAccountId(),
+                'amount'      => $dto->getAmount(),
+                'currency'    => $dto->getCurrency(),
+                'description' => $dto->getDescription(),
+                'commission'  => 0.00,
+                'status'      => 'processed',
+            ]);
+        });
+
+        return $payment;
+    }
+
+    public function deletePayment(Payment $payment): void
     {
         $payment->delete();
     }

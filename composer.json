@@ -7,12 +7,12 @@
     "license": "MIT",
     "require": {
         "php": "^8.2",
+        "darkaonline/l5-swagger": "*",
         "laravel/framework": "^12.0",
         "laravel/horizon": "^5.45",
         "laravel/sanctum": "^4.0",
         "laravel/tinker": "^2.10.1",
-        "spatie/laravel-data": "^4.22",
-        "ext-http": "*"
+        "spatie/laravel-data": "^4.22"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",

@@ -29,6 +29,7 @@ class Payment extends Model
         'commission',
         'status',
         'currency',
+        'description',
     ];
 
     public function user(): BelongsTo
