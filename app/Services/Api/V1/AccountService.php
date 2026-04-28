@@ -23,7 +23,6 @@ final readonly class AccountService
 
     public function createAccount(CreateAccountDTO $dto): Account
     {
-        /** @var Account $account */
         $account = $this->accountRepository->create([
             'balance' => $dto->getBalance(),
         ]);
