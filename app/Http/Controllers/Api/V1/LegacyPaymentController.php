@@ -5,20 +5,21 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api\V1;
 
 use App\DTO\Api\V1\CreatePaymentDTO;
-use App\Http\Requests\Api\V1\StorePaymentRequest;
-use App\Http\Resources\PaymentResource;
+use App\Http\Requests\Api\V1\Payment\PaymentStoreRequest;
+use App\Models\Payment;
 use App\Services\Api\V1\PaymentService;
 use Illuminate\Http\JsonResponse;
+use Symfony\Component\HttpFoundation\Response;
 
 class LegacyPaymentController
 {
-    public function __construct(public PaymentService $paymentService, public CreatePaymentAction $action) {}
+    public function __construct(public PaymentService $paymentService) {}
 
     /**
-     * @param StorePaymentRequest $request
+     * @param PaymentStoreRequest $request
      * @return JsonResponse
      */
-    public function store(StorePaymentRequest $request): JsonResponse
+    public function store(PaymentStoreRequest $request): JsonResponse
     {
         //        яĸ DTO чітĸо описує, що саме потрібно сервісу;
         //        яĸ ĸонтролер стає тонĸим і не залежить від БД;
@@ -39,12 +40,7 @@ class LegacyPaymentController
         $validated = $request->validated();
         //        $this->action->handle($validated);
 
-        $dto = new CreatePaymentDTO(
-            accountId: (int) $validated['account_id'],
-            amount: (string) $validated['amount'],
-            currency: (string) $validated['currency'],
-            description: (string) ($validated['description'] ?? '')
-        );
+        $dto = CreatePaymentDTO::fromArray($validated);
         //
         //        $createPaymentDTO = $request->toDTO();
         //        $jsonData = $createPaymentDTO->getJson();
