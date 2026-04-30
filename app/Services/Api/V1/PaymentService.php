@@ -52,16 +52,14 @@ final readonly class PaymentService
         $this->accountRepository->decrementBalance($accountId, $totalDebit);
 
         /** @var Payment $payment */
-        $payment = DB::transaction(function () use ($dto, $accountId, $commission, $charged): Payment {
-            return $this->paymentRepository->create([
-                'account_id'  => $accountId,
-                'amount'      => $charged->amount,
-                'currency'    => $charged->currency,
-                'description' => $dto->getDescription(),
-                'commission'  => $commission,
-                'status'      => 'completed',
-            ]);
-        });
+        $payment = DB::transaction(fn (): Payment => $this->paymentRepository->create([
+            'account_id'  => $accountId,
+            'amount'      => $charged->amount,
+            'currency'    => $charged->currency,
+            'description' => $dto->getDescription(),
+            'commission'  => $commission,
+            'status'      => 'completed',
+        ]));
 
         event(new PaymentCompletedEvent(
             (int) $payment->id,
@@ -85,16 +83,14 @@ final readonly class PaymentService
     public function createPayment(CreatePaymentDTO $dto): Payment
     {
         /** @var Payment $payment */
-        $payment = DB::transaction(function () use ($dto): Payment {
-            return $this->paymentRepository->create([
-                'account_id'  => $dto->getAccountId(),
-                'amount'      => $dto->getAmount(),
-                'currency'    => $dto->getCurrency(),
-                'description' => $dto->getDescription(),
-                'commission'  => 0.00,
-                'status'      => 'processed',
-            ]);
-        });
+        $payment = DB::transaction(fn (): Payment => $this->paymentRepository->create([
+            'account_id'  => $dto->getAccountId(),
+            'amount'      => $dto->getAmount(),
+            'currency'    => $dto->getCurrency(),
+            'description' => $dto->getDescription(),
+            'commission'  => 0.00,
+            'status'      => 'processed',
+        ]));
 
         Log::info('Payment created', [
             'payment_id'  => $payment->id,

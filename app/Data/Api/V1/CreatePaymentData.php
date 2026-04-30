@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Data\Api\V1;
 
 use Spatie\LaravelData\Attributes\Validation\Exists;
@@ -12,7 +14,6 @@ use Symfony\Contracts\Service\Attribute\Required;
 
 class CreatePaymentData extends Data
 {
-
     /*
      *      'user_id' => 'required|exists:users,id',
             'amount' => 'required|numeric|min:0',
@@ -28,7 +29,6 @@ class CreatePaymentData extends Data
         public ?string $status,
         #[Required]
         public ?string $currency
-
     ) {}
 
     public static function rules(?ValidationContext $context = null): array

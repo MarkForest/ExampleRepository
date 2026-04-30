@@ -25,7 +25,7 @@ final class CreatePaymentDTO implements BaseDTOInterface
     {
         $this->userId = $userId;
         $this->accountId = $accountId !== null ? (int) $accountId : null;
-        $this->moneyObject = new MoneyObject((string)$amount, $currency);
+        $this->moneyObject = new MoneyObject((string) $amount, $currency);
         $this->description = $description;
     }
 

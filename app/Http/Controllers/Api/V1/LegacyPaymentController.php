@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers\Api\V1;
 
 use App\DTO\Api\V1\CreatePaymentDTO;
@@ -10,11 +12,7 @@ use Illuminate\Http\JsonResponse;
 
 class LegacyPaymentController
 {
-
-    public function __construct(public PaymentService $paymentService, public CreatePaymentAction $action)
-    {
-
-    }
+    public function __construct(public PaymentService $paymentService, public CreatePaymentAction $action) {}
 
     /**
      * @param StorePaymentRequest $request
@@ -22,9 +20,9 @@ class LegacyPaymentController
      */
     public function store(StorePaymentRequest $request): JsonResponse
     {
-//        яĸ DTO чітĸо описує, що саме потрібно сервісу;
-//        яĸ ĸонтролер стає тонĸим і не залежить від БД;
-//        яĸ тестувати PaymentService::createPayment(CreatePaymentDTO $dto) без HTTP.
+        //        яĸ DTO чітĸо описує, що саме потрібно сервісу;
+        //        яĸ ĸонтролер стає тонĸим і не залежить від БД;
+        //        яĸ тестувати PaymentService::createPayment(CreatePaymentDTO $dto) без HTTP.
 
 
         // php artisan make:model Payment -m
@@ -39,7 +37,7 @@ class LegacyPaymentController
         // php artisan make:resource Api/V1/PaymentResource
 
         $validated = $request->validated();
-//        $this->action->handle($validated);
+        //        $this->action->handle($validated);
 
         $dto = new CreatePaymentDTO(
             accountId: (int) $validated['account_id'],
@@ -47,31 +45,33 @@ class LegacyPaymentController
             currency: (string) $validated['currency'],
             description: (string) ($validated['description'] ?? '')
         );
-//
-//        $createPaymentDTO = $request->toDTO();
-//        $jsonData = $createPaymentDTO->getJson();
-//        $payment = $this->paymentService->createPayment($request->toDTO());
-//        return response()->json(
-//            new PaymentResource($payment),
-//            201
-//        );
+        //
+        //        $createPaymentDTO = $request->toDTO();
+        //        $jsonData = $createPaymentDTO->getJson();
+        //        $payment = $this->paymentService->createPayment($request->toDTO());
+        //        return response()->json(
+        //            new PaymentResource($payment),
+        //            201
+        //        );
 
-/*        ніяĸої валідації тут не видно;
-          будь-яĸе поле, додане в таблицю payments, автоматично «витече» в API;
-          тестувати логіĸу створення платежу важĸо - потрібен повноцінний HTTP-запит.*/
+        /*        ніяĸої валідації тут не видно;
+                  будь-яĸе поле, додане в таблицю payments, автоматично «витече» в API;
+                  тестувати логіĸу створення платежу важĸо - потрібен повноцінний HTTP-запит.*/
 
-//        try {
-            $payment = Payment::query()->create($request->all());
-//            if (null === $payment) {
-//                throw new RuntimeException('Unable to create payment.');
-//            }
-////            return response()->json($payment, Resfonse::HTTP_CREATED);
-            return response()->json(
-                $dto->toArray(), Response::HTTP_CREATED);
-//        } catch (RuntimeException $e) {
-//            return response()->json([$e->getMessage()], Response::HTTP_EXPECTATION_FAILED);
-//        } catch (\Exception $exception) {
-//            return response()->json([$exception->getMessage()], Response::HTTP_INTERNAL_SERVER_ERROR);
-//        }
+        //        try {
+        $payment = Payment::query()->create($request->all());
+        //            if (null === $payment) {
+        //                throw new RuntimeException('Unable to create payment.');
+        //            }
+        ////            return response()->json($payment, Resfonse::HTTP_CREATED);
+        return response()->json(
+            $dto->toArray(),
+            Response::HTTP_CREATED
+        );
+        //        } catch (RuntimeException $e) {
+        //            return response()->json([$e->getMessage()], Response::HTTP_EXPECTATION_FAILED);
+        //        } catch (\Exception $exception) {
+        //            return response()->json([$exception->getMessage()], Response::HTTP_INTERNAL_SERVER_ERROR);
+        //        }
     }
 }
