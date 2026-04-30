@@ -9,12 +9,15 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
+ * @mixin \App\Models\Payment
+ *
  * @property int $id
  * @property int|null $account_id
  * @property string $amount
  * @property string $status
  * @property string $currency
  * @property string|null $description
+ * @property mixed $created_at
  */
 class PaymentResource extends JsonResource
 {

@@ -9,8 +9,11 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
+ * @mixin \App\Models\Account
+ *
  * @property int $id
  * @property numeric|string $balance
+ * @property mixed $created_at
  */
 class AccountResource extends JsonResource
 {

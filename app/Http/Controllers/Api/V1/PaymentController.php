@@ -43,7 +43,7 @@ class PaymentController extends Controller
             $dto = CreatePaymentDTO::fromArray($request->validated());
             $payment = $this->paymentService->createPayment($dto);
         } catch (Throwable $exception) {
-            $userId = (int) optional($request->user())->getAuthIdentifier();
+            $userId = (int) ($request->user()?->getAuthIdentifier() ?? 0);
             $gatewayCode = 'INTERNAL_ERROR';
             $correlationId = (string) (Context::get('correlation_id') ?? $request->header('X-Correlation-ID') ?? 'unknown');
 
@@ -90,7 +90,7 @@ class PaymentController extends Controller
     public function demoFail(Request $request): JsonResponse
     {
         $correlationId = (string) (Context::get('correlation_id') ?? $request->header('X-Correlation-ID') ?? 'unknown');
-        $userId = (int) optional($request->user())->getAuthIdentifier();
+        $userId = (int) ($request->user()?->getAuthIdentifier() ?? 0);
 
         $this->paymentErrorReporter->reportPaymentFailure(
             paymentId: 999999,

@@ -26,7 +26,7 @@ final class AssignCorrelationId
         Context::add('endpoint', sprintf('%s %s', $request->method(), $request->path()));
         Context::add('request_method', $request->method());
         Context::add('request_path', $request->path());
-        Context::add('user_id', optional($request->user())->getAuthIdentifier());
+        Context::add('user_id', $request->user()?->getAuthIdentifier());
 
         Log::shareContext(Context::all());
 

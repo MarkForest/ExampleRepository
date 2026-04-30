@@ -27,7 +27,7 @@ final class PaymentErrorReporter
 
         Log::error($message, $context);
 
-        \Sentry\withScope(static function (Scope $scope) use ($paymentId, $userId, $gatewayCode, $correlationId, $message, $context): void {
+        \Sentry\withScope(static function (Scope $scope) use ($userId, $gatewayCode, $message, $context): void {
             $scope->setTag('module', 'payments');
             $scope->setTag('action', 'gateway_failure');
             $scope->setTag('gateway_code', $gatewayCode);
