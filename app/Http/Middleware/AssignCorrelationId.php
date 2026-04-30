@@ -8,6 +8,7 @@ use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use Sentry\State\Scope;
 use Symfony\Component\HttpFoundation\Response;
 
 final class AssignCorrelationId
@@ -23,6 +24,12 @@ final class AssignCorrelationId
         Log::shareContext([
             'correlation_id' => $correlationId,
         ]);
+
+        \Sentry\configureScope(static function (Scope $scope) use ($correlationId, $request): void {
+            $scope->setTag('correlation_id', $correlationId);
+            $scope->setExtra('correlation_id', $correlationId);
+            $scope->setExtra('endpoint', sprintf('%s %s', $request->method(), $request->path()));
+        });
 
         $request->headers->set('X-Correlation-ID', $correlationId);
 

@@ -10,12 +10,18 @@ use App\Http\Requests\Api\V1\Payment\PaymentStoreRequest;
 use App\Http\Resources\PaymentResource;
 use App\Models\Payment;
 use App\Services\Api\V1\PaymentService;
+use App\Services\Monitoring\PaymentErrorReporter;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Http\Request;
+use Throwable;
 
 class PaymentController extends Controller
 {
-    public function __construct(private readonly PaymentService $paymentService) {}
+    public function __construct(
+        private readonly PaymentService $paymentService,
+        private readonly PaymentErrorReporter $paymentErrorReporter
+    ) {}
 
     /**
      * Display a listing of payments.
@@ -32,8 +38,23 @@ class PaymentController extends Controller
      */
     public function store(PaymentStoreRequest $request): JsonResponse
     {
-        $dto = CreatePaymentDTO::fromArray($request->validated());
-        $payment = $this->paymentService->createPayment($dto);
+        try {
+            $dto = CreatePaymentDTO::fromArray($request->validated());
+            $payment = $this->paymentService->createPayment($dto);
+        } catch (Throwable $exception) {
+            $userId = (int) optional($request->user())->getAuthIdentifier();
+            $gatewayCode = 'INTERNAL_ERROR';
+            $correlationId = (string) ($request->header('X-Correlation-ID') ?? 'unknown');
+
+            $this->paymentErrorReporter->reportPaymentFailure(
+                paymentId: 0,
+                userId: $userId,
+                gatewayCode: $gatewayCode,
+                correlationId: $correlationId
+            );
+
+            throw $exception;
+        }
 
         return response()->json(['data' => new PaymentResource($payment)], 201);
     }
@@ -60,5 +81,26 @@ class PaymentController extends Controller
         $this->paymentService->deletePayment($payment);
 
         return response()->json(null, 204);
+    }
+
+    /**
+     * Demo endpoint to trigger PaymentErrorReporter for lesson 8.2.
+     */
+    public function demoFail(Request $request): JsonResponse
+    {
+        $correlationId = (string) ($request->header('X-Correlation-ID') ?? 'unknown');
+        $userId = (int) optional($request->user())->getAuthIdentifier();
+
+        $this->paymentErrorReporter->reportPaymentFailure(
+            paymentId: 999999,
+            userId: $userId,
+            gatewayCode: 'DEMO_FAIL',
+            correlationId: $correlationId
+        );
+
+        return response()->json([
+            'message' => 'Demo payment failure has been reported to logs and Sentry.',
+            'correlation_id' => $correlationId,
+        ], 202);
     }
 }

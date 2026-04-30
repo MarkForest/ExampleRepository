@@ -68,6 +68,18 @@ Route::get('/api/v1/test-sentry', static function (): void {
 
 Після запиту до `/api/v1/test-sentry` відповідний exception має зʼявитися в Sentry у вибраному проекті, з environment, що відповідає `APP_ENV`.
 
+### 1.4. Що вже реалізовано в цьому проєкті
+
+- Додано endpoint `GET /api/v1/test-sentry` у `routes/api.php` (throw `RuntimeException('Test Sentry integration')`).
+- Для сумісності з попереднім демо залишено також `GET /api/v1/sentry-test`.
+- Middleware `AssignCorrelationId` не лише додає `X-Correlation-ID` у request/response і в логи, а й пробрасывает `correlation_id` та `endpoint` у Sentry scope.
+
+Швидка перевірка:
+
+```bash
+curl -i http://localhost/api/v1/test-sentry -H "X-Correlation-ID: demo-sentry-001"
+```
+
 > **Що проговорити на демонстрації:**  
 > - що SDK автоматично ловить необработанные exceptions;  
 > - як `APP_ENV` впливає на поле environment у Sentry;  
@@ -130,6 +142,38 @@ final class PaymentErrorReporter
 > - тут ми не пересылаем оригинальный exception шлюза (если он уже обработан), а создаём свой с контекстом;  
 > - `gateway_code` и `module=payments` в `tags` позволяют быстро фильтровать ошибки в Sentry;  
 > - `payment_id`, `user_id`, `correlation_id` в `extra`/user позволяют перейти к логам и данным в БД.
+
+### 2.2. Де саме викликається `PaymentErrorReporter` у цьому проєкті
+
+1. **Основний виклик у бойовому потоці:**  
+   `app/Http/Controllers/Api/V1/PaymentController.php`, метод `store()`:
+   - при `catch (Throwable $exception)` викликається `reportPaymentFailure(...)`;
+   - після цього exception пробрасывается далі (щоб не змінювати поточний контракт помилок API).
+
+2. **Безпечний demo-виклик для уроку:**  
+   Додано endpoint `POST /api/v1/payments/demo-fail` (`PaymentController@demoFail`), який:
+   - явно викликає `PaymentErrorReporter`;
+   - повертає `202` і `correlation_id`;
+   - не ламає стандартний сценарій створення платежу.
+
+3. **Реалізований клас репортера:**  
+   `app/Services/Monitoring/PaymentErrorReporter.php`.
+
+### 2.3. Команда для демо-тригера `PaymentErrorReporter`
+
+```bash
+curl -i -X POST http://localhost/api/v1/payments/demo-fail \
+  -H "X-Correlation-ID: demo-per-002"
+```
+
+Очікуваний результат:
+
+- HTTP `202 Accepted`;
+- у логах є `Payment processing failed at gateway level`;
+- у Sentry є подія з tags:
+  - `module=payments`
+  - `action=gateway_failure`
+  - `gateway_code=DEMO_FAIL`
 
 
 

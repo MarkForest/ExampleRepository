@@ -12,6 +12,7 @@
         "laravel/horizon": "^5.45",
         "laravel/sanctum": "^4.0",
         "laravel/tinker": "^2.10.1",
+        "sentry/sentry-laravel": "^4.25",
         "spatie/laravel-data": "^4.22"
     },
     "require-dev": {

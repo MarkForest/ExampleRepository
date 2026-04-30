@@ -11,5 +11,14 @@ Route::get('/user', function (Request $request) {
 
 Route::prefix('v1')->group(function () {
     Route::apiResource('payments', PaymentController::class)->except(['update']);
+    Route::post('payments/demo-fail', [PaymentController::class, 'demoFail'])->name('payments.demo-fail');
     Route::apiResource('accounts', AccountController::class)->except(['update']);
+    Route::get('/test-sentry', static function (): void {
+        throw new RuntimeException('Test Sentry integration - Wake up Neo');
+    })->name('test.sentry');
+
+    Route::get('/sentry-test', function () {
+        throw new Exception('Test Sentry error - Wake up Neo');
+    })->name('sentry.test');
+
 });

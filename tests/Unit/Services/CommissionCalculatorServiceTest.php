@@ -15,8 +15,6 @@ class CommissionCalculatorServiceTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        var_dump('create new instance');
-        Log::info('create new instance');
         $this->commissionCalculatorService = App::make(CommissionCalculatorService::class);
     }
 
