@@ -14,6 +14,7 @@ use App\Services\Monitoring\PaymentErrorReporter;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Context;
 use Throwable;
 
 class PaymentController extends Controller
@@ -44,7 +45,7 @@ class PaymentController extends Controller
         } catch (Throwable $exception) {
             $userId = (int) optional($request->user())->getAuthIdentifier();
             $gatewayCode = 'INTERNAL_ERROR';
-            $correlationId = (string) ($request->header('X-Correlation-ID') ?? 'unknown');
+            $correlationId = (string) (Context::get('correlation_id') ?? $request->header('X-Correlation-ID') ?? 'unknown');
 
             $this->paymentErrorReporter->reportPaymentFailure(
                 paymentId: 0,
@@ -88,7 +89,7 @@ class PaymentController extends Controller
      */
     public function demoFail(Request $request): JsonResponse
     {
-        $correlationId = (string) ($request->header('X-Correlation-ID') ?? 'unknown');
+        $correlationId = (string) (Context::get('correlation_id') ?? $request->header('X-Correlation-ID') ?? 'unknown');
         $userId = (int) optional($request->user())->getAuthIdentifier();
 
         $this->paymentErrorReporter->reportPaymentFailure(

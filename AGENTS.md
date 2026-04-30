@@ -102,10 +102,12 @@
 
 - Middleware `AssignCorrelationId`:
   - добавляет/пробрасывает `X-Correlation-ID`;
+  - кладет request-контекст в `Context` (`correlation_id`, endpoint, user_id и т.д.);
   - шарит контекст в логи;
   - добавляет контекст в Sentry scope.
 - Сервис `PaymentErrorReporter`:
   - структурированный `Log::error`;
+  - дополнительно объединяет доменный контекст ошибки с `Context::all()`;
   - Sentry capture c tags/extra/user-контекстом.
 - Кастомный exception rendering в `bootstrap/app.php` для API v1 (422/404/доменные ошибки).
 
