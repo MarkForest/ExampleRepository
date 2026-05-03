@@ -26,9 +26,9 @@ final class AssignCorrelationId
         Context::add('endpoint', sprintf('%s %s', $request->method(), $request->path()));
         Context::add('request_method', $request->method());
         Context::add('request_path', $request->path());
-        Context::add('user_id', $request->user()?->getAuthIdentifier());
+//        Context::add('user_id', (int) ($request->user()?->getAuthIdentifier() ?? 0));
 
-        Log::shareContext(Context::all());
+        Log::withContext(Context::all());
 
         \Sentry\configureScope(static function (Scope $scope) use ($correlationId, $request): void {
             $scope->setTag('correlation_id', $correlationId);

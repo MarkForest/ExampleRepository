@@ -5,11 +5,13 @@
 ## 1) Что пришло из уроков 8.1 и 8.2
 
 Из урока `8.1` в проекте закреплены практики:
+
 - уровни логирования (`info`, `warning`, `error`);
 - структурированный контекст в `Log::*`;
 - `correlation_id` как ключ трассировки запроса.
 
 Из урока `8.2` внедрено:
+
 - интеграция Sentry через `sentry/sentry-laravel`;
 - проброс контекста в Sentry scope;
 - отдельный `PaymentErrorReporter` для единого репортинга payment-ошибок (лог + Sentry).
@@ -17,11 +19,13 @@
 ## 2) Текущая конфигурация каналов логирования
 
 Фактически сейчас (по `.env` и `config/logging.php`):
+
 - `LOG_CHANNEL=stack`
 - `LOG_STACK=single,sentry_logs`
 - `LOG_LEVEL=info`
 
 Что это означает:
+
 - логи Laravel пишутся в файл `storage/logs/laravel.log` (канал `single`);
 - логи уровня от `info` и выше дополнительно могут уходить в канал `sentry_logs` (в зависимости от конфигурации Sentry);
 - по умолчанию это не stdout-режим контейнера.
@@ -57,7 +61,6 @@ HTTP request / Job
   - кладет request-метаданные в `Context`;
   - делится контекстом с логером через `Log::shareContext(...)`;
   - добавляет `correlation_id` и `endpoint` в Sentry scope.
-
 - `PaymentController`:
   - при ошибках создания платежа вызывает `PaymentErrorReporter`;
   - есть demo endpoint `POST /api/v1/payments/demo-fail` для controlled проверки observability.
@@ -67,11 +70,9 @@ HTTP request / Job
 - `PaymentService`:
   - `Log::info('Payment created', ...)`;
   - `Log::info('Payment deleted', ...)`.
-
 - `AccountService`:
   - `Log::info('Account created', ...)`;
   - `Log::info('Account deleted', ...)`.
-
 - `PaymentErrorReporter`:
   - `Log::error('Payment processing failed at gateway level', ...)`;
   - объединяет доменный контекст ошибки с `Context::all()`;
@@ -85,19 +86,20 @@ HTTP request / Job
   - `CheckPaymentStatusesJob`: info при выполнении;
   - `DailyPaymentsReportJob`: info при выполнении;
   - `LogPaymentToAuditJob`: warning, если payment не найден.
-
 - Listener:
   - `SendPaymentConfirmationNotificationListener`: warning, если user не найден.
 
 ## 5) Что уже покрыто с точки зрения observability
 
 Уже есть:
+
 - сквозной `correlation_id` для API-запросов;
 - структурированные контекстные логи по ключевым сущностям (`payment_id`, `account_id`, `user_id`, `gateway_code`);
 - централизованный репортинг payment-failure в Sentry;
 - demo-endpoints для учебной демонстрации и проверки интеграции.
 
 Частично покрыто (зона развития):
+
 - единые naming-правила сообщений и полей для всех jobs/listeners;
 - расширение контекста для async-цепочек (чтобы correlation/request context последовательно жил в очередях);
 - явная матрица событий `info/warning/error/critical` для всех критичных бизнес-операций.
@@ -109,7 +111,7 @@ HTTP request / Job
 ```bash
 docker compose ps
 docker compose exec php php artisan route:list --path=api/v1
-docker compose exec php php artisan test
+f
 ```
 
 Проверка payment error flow:
@@ -135,7 +137,9 @@ curl -i http://localhost/api/v1/test-sentry -H "X-Correlation-ID: arch-sentry-00
 ## 7) Короткий вывод
 
 Текущая архитектура уже соответствует учебной цели модулей `8.1` и `8.2`:
+
 - базовые практики структурированного логирования внедрены;
 - `correlation_id` и контекст централизованы;
 - Sentry интегрирован как error-tracking слой;
 - проект готов к уроку `8.3`, где акцент на лог-агрегацию и incident workflow.
+

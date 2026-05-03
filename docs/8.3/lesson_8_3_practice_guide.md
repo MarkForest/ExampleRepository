@@ -117,10 +117,24 @@ curl -i -X POST http://localhost/api/v1/payments/demo-fail \
 
 ## 5) Демо 2 — Структурированный лог ошибки в контейнерных логах
 
-Сразу после запроса выше:
+Сразу после запроса выше (в течение 5-10 секунд):
 
 ```bash
-docker compose logs --since=2m php
+docker compose logs --since=5m php
+```
+
+Если всё равно пусто, используйте стабильный вариант:
+
+```bash
+docker compose logs -f php
+```
+
+и в другом терминале повторно триггерните:
+
+```bash
+curl -i -X POST http://localhost/api/v1/payments/demo-fail \
+  -H "Accept: application/json" \
+  -H "X-Correlation-ID: lesson83-demo-002"
 ```
 
 Ожидаем строку вида:
@@ -134,7 +148,160 @@ docker compose logs --since=2m php
 - `correlation_id` сквозной (из запроса в лог);
 - событие легко искать и фильтровать в лог-агрегации.
 
-## 6) Демо 3 — Мини incident-flow (по мотивам слайда 13a)
+## 6) Поднять локальную лог-агрегацию (Loki + Promtail + Grafana)
+
+Ниже самый практичный вариант для live-демо: не “концептуально”, а реально поднять агрегатор и показать поиск логов по полям.
+
+### 6.1. Добавить override compose-файл
+
+Создайте `docker-compose.logging.yml` в корне проекта:
+
+```yaml
+services:
+  loki:
+    image: grafana/loki:3.0.0
+    container_name: lesson83_loki
+    command: -config.file=/etc/loki/local-config.yaml
+    ports:
+      - "3100:3100"
+
+  promtail:
+    image: grafana/promtail:3.0.0
+    container_name: lesson83_promtail
+    command: -config.file=/etc/promtail/promtail.yaml
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./docker/promtail/promtail.yaml:/etc/promtail/promtail.yaml:ro
+    depends_on:
+      - loki
+
+  grafana:
+    image: grafana/grafana:11.1.0
+    container_name: lesson83_grafana
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+    ports:
+      - "3000:3000"
+    depends_on:
+      - loki
+```
+
+### 6.2. Добавить конфиг promtail
+
+### 6.1.1. Пояснення базових параметрів `docker-compose.logging.yml` (українською)
+
+- `image` — готовий Docker-образ сервісу (`loki`, `promtail`, `grafana`).
+- `container_name` — фіксоване ім'я контейнера для зручного дебагу.
+- `command` — з яким конфігом стартує сервіс (наприклад, `-config.file=...`).
+- `ports` — проброс портів на хост:
+  - `3100:3100` для Loki API;
+  - `3000:3000` для Grafana UI.
+- `volumes`:
+  - `/var/run/docker.sock:/var/run/docker.sock:ro` — дає `promtail` read-only доступ до метаданих Docker-контейнерів;
+  - `./docker/promtail/promtail.yaml:/etc/promtail/promtail.yaml:ro` — підключає локальний конфіг Promtail.
+- `environment` — змінні оточення контейнера (у прикладі логін/пароль Grafana).
+- `depends_on` — порядок запуску (спочатку `loki`, потім `promtail`/`grafana`).
+
+Для `promtail.yaml` важливо:
+- `clients.url` — куди штовхати логи (`http://loki:3100/loki/api/v1/push`);
+- `docker_sd_configs` — звідки читати список контейнерів;
+- `relabel_configs` — які labels додавати (наприклад, `container`, `service`) для фільтрації в Grafana.
+
+Создайте файл `docker/promtail/promtail.yaml`:
+
+```yaml
+server:
+  http_listen_port: 9080
+  grpc_listen_port: 0
+
+positions:
+  filename: /tmp/positions.yaml
+
+clients:
+  - url: http://loki:3100/loki/api/v1/push
+
+scrape_configs:
+  - job_name: docker
+    docker_sd_configs:
+      - host: unix:///var/run/docker.sock
+        refresh_interval: 5s
+    relabel_configs:
+      - source_labels: ['__meta_docker_container_name']
+        regex: '/(.*)'
+        target_label: container
+      - source_labels: ['__meta_docker_container_label_com_docker_compose_service']
+        target_label: service
+      - source_labels: ['__meta_docker_container_label_com_docker_compose_project']
+        target_label: compose_project
+```
+
+### 6.3. Запуск стека агрегации
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.logging.yml up -d
+docker compose -f docker-compose.yml -f docker-compose.logging.yml ps
+```
+
+Ожидаемо `Up`:
+- `loki`
+- `promtail`
+- `grafana`
+- базовые сервисы проекта (`php`, `mysql`, `redis`, ...).
+
+### 6.4. Подключить Loki в Grafana
+
+1. Откройте `http://localhost:3000` (логин/пароль: `admin/admin`).
+2. `Connections` -> `Data sources` -> `Add data source` -> `Loki`.
+3. URL: `http://loki:3100` (если добавляете из контейнера Grafana) или `http://localhost:3100` (если UI проверяет с хоста, в зависимости от режима).
+4. `Save & test`.
+
+### 6.5. Показать агрегацию на живых логах
+
+Сгенерировать события:
+
+```bash
+curl -i -X POST http://localhost/api/v1/payments/demo-fail \
+  -H "Accept: application/json" \
+  -H "X-Correlation-ID: agg-demo-001"
+```
+
+В Grafana Explore (Loki) покажите запросы:
+
+- все логи приложения:
+```logql
+{container="finance_app"}
+```
+
+- только ошибки:
+```logql
+{container="finance_app"} |= "ERROR"
+```
+
+- конкретный correlation id:
+```logql
+{container="finance_app"} |= "agg-demo-001"
+```
+
+- только payment failure:
+```logql
+{container="finance_app"} |= "Payment processing failed at gateway level"
+```
+
+Что проговорить студентам:
+- это уже не `tail` на одном контейнере, а централизованный поиск;
+- один и тот же запрос в UI можно сохранить и использовать в инциденте;
+- correlation_id дает трассировку кейса за секунды.
+
+### 6.6. Остановить локальную агрегацию после демо
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.logging.yml down -v --remove-orphans
+```
+
+`-v` удалит связанные docker volumes (данные Loki/Grafana), чтобы после урока не оставалось накопленных логов и состояния.
+
+## 7) Демо 3 — Мини incident-flow (по мотивам слайда 13a)
 
 Сгенерировать серию ошибок с разными correlation id:
 
@@ -158,13 +325,13 @@ docker compose logs --since=5m php
 - обсуждаем временные действия (rollback/ограничение функции/коммуникация);
 - фиксируем, какие поля обязательны для post-mortem.
 
-## 7) Привязка к слайдам
+## 8) Привязка к слайдам
 
 - **Слайд 6a**: показываем, что приложение пишет в поток контейнера (`stderr`), откуда это легко забирает любой collector.
 - **Слайд 9a**: разбираем структуру `message + контекст` на реальном логе.
 - **Слайд 13a**: делаем мини-сценарий инцидента на серии одинаковых ошибок.
 
-## 8) Частые проблемы и быстрое решение
+## 9) Частые проблемы и быстрое решение
 
 1. **Нет логов в `docker compose logs php`**
    - проверьте, что включили `LOG_CHANNEL=stderr`;
@@ -178,7 +345,7 @@ docker compose logs --since=5m php
    - выполните `docker compose ps`;
    - при необходимости: `docker compose up -d --build`.
 
-## 9) Возврат к исходной конфигурации после урока
+## 10) Возврат к исходной конфигурации после урока
 
 ```bash
 docker compose exec php sh -lc 'mv .env.lesson83.bak .env'
@@ -187,7 +354,7 @@ docker compose restart php
 
 Это вернет стандартный режим проекта (`stack` + `single,sentry_logs`).
 
-## 10) Короткий чек-лист перед занятием
+## 11) Короткий чек-лист перед занятием
 
 - `docker compose ps` — все сервисы `Up`;
 - `docker compose exec php php artisan test` — зеленый прогон;
