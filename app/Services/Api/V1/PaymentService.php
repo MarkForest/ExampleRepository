@@ -9,6 +9,7 @@ use App\Contracts\Repositories\PaymentRepositoryInterface;
 use App\DTO\Api\V1\CreatePaymentDTO;
 use App\Events\Payment\PaymentCompletedEvent;
 use App\Models\Payment;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use RuntimeException;
@@ -74,6 +75,16 @@ final readonly class PaymentService
     public function findById(int $id): ?Payment
     {
         return $this->paymentRepository->findById($id);
+    }
+
+    /**
+     * Список платежів рахунку з пагінацією та eager loading рахунку (Урок 9.1 — уникнення N+1).
+     *
+     * @return LengthAwarePaginator<int, Payment>
+     */
+    public function listPaymentsForAccount(int $accountId, int $perPage): LengthAwarePaginator
+    {
+        return $this->paymentRepository->paginateByAccountId($accountId, $perPage);
     }
 
     /**

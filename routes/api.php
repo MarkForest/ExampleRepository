@@ -10,6 +10,8 @@ Route::get('/user', function (Request $request) {
 })->middleware('auth:sanctum');
 
 Route::prefix('v1')->group(function () {
+    Route::get('accounts/{account}/payments', [AccountController::class, 'payments'])
+        ->name('accounts.payments.index');
     Route::apiResource('payments', PaymentController::class)->except(['update']);
     Route::post('payments/demo-fail', [PaymentController::class, 'demoFail'])->name('payments.demo-fail');
     Route::apiResource('accounts', AccountController::class)->except(['update']);

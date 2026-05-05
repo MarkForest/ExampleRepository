@@ -6,6 +6,7 @@ namespace App\Repositories;
 
 use App\Contracts\Repositories\PaymentRepositoryInterface;
 use App\Models\Payment;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
 class PaymentRepository implements PaymentRepositoryInterface
 {
@@ -21,5 +22,23 @@ class PaymentRepository implements PaymentRepositoryInterface
         /** @var Payment|null $payment */
         $payment = Payment::query()->find($id);
         return $payment;
+    }
+
+    public function paginateByAccountId(int $accountId, int $perPage): LengthAwarePaginator
+    {
+        /** @var LengthAwarePaginator<int, Payment> $paginator */
+        $paginator = Payment::query()
+            ->where('account_id', $accountId)
+            ->with('account')
+            ->latest()
+            ->paginate($perPage);
+
+        return $paginator;
+    }
+
+    public function getPayments($accountId)
+    {
+        // latest == orderBy('created_at', 'desc')
+        return Payment::query()->where('account_id', $accountId)->latest()->get();
     }
 }
