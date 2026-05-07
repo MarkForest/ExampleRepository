@@ -10,6 +10,7 @@ use App\Http\Controllers\AntiPattern\Controller;
 use App\Http\Requests\Api\V1\Account\AccountPaymentsIndexRequest;
 use App\Http\Requests\Api\V1\Account\AccountStoreRequest;
 use App\Http\Resources\AccountResource;
+use App\Http\Resources\PaymentFatResource;
 use App\Http\Resources\PaymentResource;
 use App\Models\Account;
 use App\Models\Payment;
@@ -42,6 +43,22 @@ class AccountController extends Controller
         $payments = $this->paymentService->listPaymentsForAccount((int) $account->id, $query->getPerPage());
 
         return PaymentResource::collection($payments);
+    }
+
+    public function paymentsCached(Account $account, AccountPaymentsIndexRequest $request): JsonResponse
+    {
+        return response()->json([
+            'data'    => [],
+            'message' => 'TODO: добавить ETag + Cache-Control private, max-age=15',
+        ]);
+    }
+
+    public function paymentsFat(Account $account, AccountPaymentsIndexRequest $request): AnonymousResourceCollection
+    {
+        $query = AccountPaymentsQueryDTO::fromValidated($request->validated());
+        $payments = $this->paymentService->listPaymentsForAccount((int) $account->id, $query->getPerPage());
+
+        return PaymentFatResource::collection($payments);
     }
 
     public function store(AccountStoreRequest $request): JsonResponse

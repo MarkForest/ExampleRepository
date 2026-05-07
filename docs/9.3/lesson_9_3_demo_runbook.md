@@ -102,6 +102,12 @@ public function payments(Account $account, AccountPaymentsIndexRequest $request)
 
 > Коротко: ETag даёт «дешёвые 304» для повторных запросов, а `Cache-Control` говорит клиенту, **кому** и **на сколько** разрешено кешировать.
 
+> **В проекте уже подготовлен пустой метод-заглушка:**
+> - `AccountController::paymentsCached()` (рядом с `payments()`),  
+> - роут `GET /api/v1/accounts/{account}/payments-cached` → `accounts.payments.cached`.  
+>
+> Сейчас он просто возвращает `{"data": [], "message": "TODO: ..."}`. На демо я открываю файл и **в живую набираю** код по схеме выше (DTO → service → ETag → 304 / 200 + `Cache-Control`). Старый `payments()` остаётся «как было», и студенты сразу видят разницу: один отдаёт обычный 200, другой — 200 с `ETag`/`Cache-Control` и затем 304 на повторе.
+
 ### 2.3 Учебный `CurrencyController` для публичного кеша (по слайду)
 
 Для довідника валют пример с `public, max-age=3600`:
@@ -140,17 +146,38 @@ public function index(): \Illuminate\Http\JsonResponse
 
 Выбор `public/private` и `max-age` — это и есть основное практическое решение по HTTP-кешу для каждого endpoint-а.
 
-### 2.4 Live-демо (можно показать без правки кода)
+> **В проекте уже подготовлен пустой `CurrencyController`:**
+> - класс `App\Http\Controllers\Api\V1\CurrencyController` с пустым методом `index()`,
+> - роут `GET /api/v1/currencies` → `currencies.index`.
+>
+> На демо открываю файл и в живую дописываю возврат списка валют + заголовок `Cache-Control: public, max-age=3600`.
 
-Показываем заголовки прямо у текущего endpoint:
+### 2.4 Live-демо (сравнение `payments` vs `payments-cached` vs `currencies`)
 
-1. Создаём аккаунт (если ещё нет id):
-  - `curl -s -X POST http://localhost/api/v1/accounts -H "Content-Type: application/json" -d '{"balance":"5000.00"}'`
-2. Смотрим заголовки ответа:
-  - `curl -i "http://localhost/api/v1/accounts/ID/payments?per_page=20"`
-3. Подсветить:
-  - сейчас нет `Cache-Control` → каждый запрос идёт «полностью»;
-  - после добавления `private, max-age=15` повторные запросы UI могут отдаваться из локального кеша.
+Шаги во время мита:
+
+1. Создать аккаунт (если ещё нет id):
+   - `curl -s -X POST http://localhost/api/v1/accounts -H "Content-Type: application/json" -d '{"balance":"5000.00"}'`
+
+2. **Базовый эндпоинт без HTTP-кеша** — посмотреть заголовки:
+   - `curl -i "http://localhost/api/v1/accounts/ID/payments?per_page=20"`
+   - В ответе **нет** `ETag` и `Cache-Control` — каждый клиентский запрос идёт «полностью».
+
+3. **Эндпоинт с клиентским HTTP-кешом** (после того, как я дописал `paymentsCached`):
+   - первый запрос — получаем тело + `ETag`:
+     - `curl -i "http://localhost/api/v1/accounts/ID/payments-cached?per_page=20"`
+   - копируем значение из заголовка `ETag: "..."`;
+   - повторный запрос с `If-None-Match` — получаем `304 Not Modified` без тела:
+     - `curl -i -H 'If-None-Match: "СКОПИРОВАННЫЙ_ETAG"' "http://localhost/api/v1/accounts/ID/payments-cached?per_page=20"`
+   - смотрим заголовок `Cache-Control: private, max-age=15`.
+
+4. **Публичный кеш для справочника валют** (после `CurrencyController::index`):
+   - `curl -i "http://localhost/api/v1/currencies"`
+   - в ответе `Cache-Control: public, max-age=3600` — клиент/прокси/CDN могут кешировать на час, к нашему серверу повторно не пойдут.
+
+5. Подсветить разницу: один и тот же шаблон (`Cache-Control` + опционально `ETag`), но разные политики под разные данные:
+   - персональный список → `private, max-age=15` + `ETag`;
+   - публичный справочник → `public, max-age=3600`.
 
 ### 2.5 Что подчеркнуть
 
@@ -168,62 +195,35 @@ public function index(): \Illuminate\Http\JsonResponse
 - Resource/DTO — это и архитектура, и перформанс одновременно.
 - Списки особенно чувствительны: каждое лишнее поле умножается на размер страницы.
 
-### 3.2 Текущий ответ списка платежей
+### 3.2 Что уже есть в проекте (готово к запуску)
 
-Endpoint: `GET /api/v1/accounts/{account}/payments`  
-Resource: `app/Http/Resources/PaymentResource.php` уже отдаёт минимально необходимое (`id`, `account_id`, `amount`, `currency`, `description`, `status`, `created_at`).
+Для прямого сравнения «жирный vs чистый» в проекте уже подготовлено:
 
-### 3.3 Учебный пример «жирного» vs «чистого» ответа (на слайде/доске)
+- **«Чистый» вариант** — `GET /api/v1/accounts/{account}/payments` через `App\Http\Resources\PaymentResource` (минимальный набор полей: `id`, `account_id`, `amount`, `currency`, `description`, `status`, `created_at`).
+- **«Жирный» вариант** — `GET /api/v1/accounts/{account}/payments-fat` через `App\Http\Resources\PaymentFatResource` (тот же сервис/репозиторий, но Resource намеренно раздут: `amount_minor_units`, `commission`, `gateway_payment_id`, `gateway_raw_response` (вложенный объект с trace), `internal_note`, `audit.host/environment`, `created_at_iso`, `created_at_unix`, `updated_at`, `updated_at_iso`, `description_length`, `status_label`, `is_processed` и т.д.).
 
-«Жирный» (что бывает по-умолчанию, если отдавать `$model->toArray()`):
+То есть оба эндпоинта возвращают **один и тот же набор платежей одного и того же аккаунта**, отличается только Resource — это даёт чистое сравнение по объёму ответа и времени сериализации.
 
-```json
-{
-  "data": [{
-    "id": 123,
-    "account_id": 10,
-    "user_id": 5,
-    "amount": "250.00",
-    "currency": "USD",
-    "description": "Оплата рахунку №1001",
-    "status": "processed",
-    "gateway_payment_id": "gw_abc",
-    "gateway_raw_response": "{...}",
-    "internal_note": "debug...",
-    "created_at": "2026-02-12T10:00:00Z",
-    "updated_at": "2026-02-12T10:00:05Z"
-  }]
-}
-```
-
-Что лишнее: `gateway_raw_response`, `internal_note`, `updated_at` — клиенту не нужно, и часть данных вообще не должна «утекать».
-
-«Чистый» (через `PaymentResource`/`PaymentListItemResource` для списков):
-
-```php
-public function toArray(Request $request): array
-{
-    return [
-        'id' => $this->id,
-        'account_id' => $this->account_id,
-        'amount' => $this->amount,
-        'currency' => $this->currency,
-        'description' => $this->description,
-        'status' => $this->status,
-        'created_at' => optional($this->created_at)->toIso8601String(),
-    ];
-}
-```
-
-### 3.4 Что измерить (через Telescope)
+### 3.3 Что показать на демо (живой замер в Telescope)
 
 1. Открыть `http://localhost/telescope/requests`.
-2. Выполнить:
-  - `for i in {1..3}; do curl -s "http://localhost/api/v1/accounts/ID/payments?per_page=50" > /dev/null; done`
-3. В Telescope посмотреть:
-  - размер ответа (`Content-Length` или примерный размер тела);
-  - количество SQL.
-4. Идея демо: «уменьшение ответа = уменьшение времени сериализации и сети, особенно при большом `per_page`».
+2. (Если данных мало) сгенерировать платежи фабрикой — это пригодится и для блока B, и для блока с индексами:
+   - `docker compose exec -T php php artisan tinker --execute="\\App\\Models\\Payment::factory()->count(2000)->create(['account_id' => ID, 'status' => 'processed', 'currency' => 'USD']);"`
+3. Сделать по 3 запроса каждого варианта, чтобы Telescope их зафиксировал:
+   - `for i in {1..3}; do curl -s "http://localhost/api/v1/accounts/ID/payments?per_page=50" > /dev/null; done`
+   - `for i in {1..3}; do curl -s "http://localhost/api/v1/accounts/ID/payments-fat?per_page=50" > /dev/null; done`
+4. В Telescope (вкладка `Requests`) открыть оба варианта по очереди и зафиксировать на доске:
+   - **Duration** (общее время запроса);
+   - **Memory**;
+   - размер тела ответа (видно в `Response` или по `Content-Length`);
+   - **Queries** (число запросов и время) — должно быть одинаковым, потому что репозиторий тот же; разница идёт именно на сериализации и сети.
+
+### 3.4 Что подчеркнуть студентам
+
+- Resource — это и архитектура, и перформанс. Одна и та же выборка из БД может стать в **разы** тяжелее по сети только из-за «жирного» ответа.
+- На больших `per_page` разница умножается: каждое лишнее поле × `per_page` строк × частота запросов = реальная нагрузка.
+- «Жирные» поля типа `gateway_raw_response` или `internal_note` — это ещё и **утечка внутренних деталей**. Контроль набора полей в Resource = security by design.
+- Правило: если поле не нужно ни одному текущему клиенту — его не должно быть в ответе. Под отдельный кейс делайте **отдельный** Resource (например, `PaymentDetailsResource` для страницы платежа), а не «всё и сразу» в списке.
 
 ---
 
@@ -362,123 +362,46 @@ done
 - Решение: API ставит job → возвращает **202 Accepted** + `task_id`.
 - Воркер делает работу в фоне, фронт опрашивает статус или ждёт нотификацию.
 
-### 5.2 Учебный job для экспорта выписки
+### 5.2 Что уже есть в проекте (готово к запуску)
 
-Файл: `app/Jobs/ExportAccountStatementJob.php`
+В проекте под этот блок уже подготовлено всё необходимое — на демо достаточно открыть файлы и запустить `curl`:
 
-```php
-<?php
+- **Контроллер** `App\Http\Controllers\Api\V1\ReportsController` — метод `generateAccountStatement(Request $request)`:
+  - валидирует `account_id`, `from`, `to`;
+  - генерирует `task_id` (UUID);
+  - диспатчит `ExportAccountStatementJob::dispatch(...)`;
+  - возвращает `202 Accepted` с `{ status, task_id, message }`.
+- **Job** `App\Jobs\ExportAccountStatementJob` — `implements ShouldQueue`:
+  - конструктор принимает `accountId`, `periodFrom`, `periodTo`, `taskId`;
+  - `handle()` пишет в лог `"Account statement export started"` с `task_id`,
+  - находит аккаунт, имитирует тяжёлую работу `sleep(3)`,
+  - пишет `"Account statement export finished"`.
+- **Роут** `POST /api/v1/reports/account-statement` → `reports.account-statement`.
+- **Воркер очереди** — сервис `queue-worker` в `docker-compose.yml` уже подхватывает джобы.
 
-declare(strict_types=1);
+### 5.3 Live-демо (поэтапно во время мита)
 
-namespace App\Jobs;
+1. В одном терминале — следим за логами в реальном времени:
+   - `docker compose exec -T php sh -lc 'tail -f -n 0 storage/logs/laravel.log'`
+2. В другом — открываем UI воркера/Telescope:
+   - `http://localhost/telescope/jobs` (вкладка `Jobs`).
+3. Делаем запрос на отчёт — он должен ответить **мгновенно**, несмотря на `sleep(3)` внутри джобы:
+   ```bash
+   curl -i -X POST "http://localhost/api/v1/reports/account-statement" \
+     -H "Content-Type: application/json" \
+     -d '{"account_id":1,"from":"2026-01-01","to":"2026-01-31"}'
+   ```
+   Ожидаем: `HTTP/1.1 202 Accepted`, в JSON — `task_id`.
+4. В логах ровно через ~3 секунды появится связка строк с этим же `task_id`:
+   - `Account statement export started ... task_id=...`
+   - `Account statement export finished ... task_id=...`
+5. В Telescope в `Jobs` видно, что джоба обработана воркером, не веб-процессом, и **время API-ответа** не зависит от времени джобы.
 
-use App\Models\Account;
-use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Foundation\Bus\Dispatchable;
-use Illuminate\Queue\InteractsWithQueue;
-use Illuminate\Queue\SerializesModels;
-use Illuminate\Support\Facades\Log;
+### 5.4 Что подчеркнуть
 
-final class ExportAccountStatementJob implements ShouldQueue
-{
-    use Dispatchable;
-    use InteractsWithQueue;
-    use Queueable;
-    use SerializesModels;
-
-    public function __construct(
-        private readonly int $accountId,
-        private readonly string $periodFrom,
-        private readonly string $periodTo,
-        private readonly string $taskId,
-    ) {}
-
-    public function handle(): void
-    {
-        /** @var Account $account */
-        $account = Account::query()->findOrFail($this->accountId);
-
-        Log::info('Account statement export started', [
-            'task_id'    => $this->taskId,
-            'account_id' => $account->id,
-            'from'       => $this->periodFrom,
-            'to'         => $this->periodTo,
-        ]);
-
-        // TODO: собрать операции, сгенерировать CSV/PDF, сохранить, уведомить пользователя
-    }
-}
-```
-
-### 5.3 Учебный контроллер `ReportsController` (отвечает 202)
-
-Файл: `app/Http/Controllers/Api/V1/ReportsController.php`
-
-```php
-<?php
-
-declare(strict_types=1);
-
-namespace App\Http\Controllers\Api\V1;
-
-use App\Http\Controllers\AntiPattern\Controller;
-use App\Jobs\ExportAccountStatementJob;
-use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
-use Illuminate\Support\Str;
-
-final class ReportsController extends Controller
-{
-    public function generateAccountStatement(Request $request): JsonResponse
-    {
-        $validated = $request->validate([
-            'account_id' => ['required', 'integer'],
-            'from'       => ['required', 'date'],
-            'to'         => ['required', 'date', 'after_or_equal:from'],
-        ]);
-
-        $taskId = (string) Str::uuid();
-
-        ExportAccountStatementJob::dispatch(
-            (int) $validated['account_id'],
-            (string) $validated['from'],
-            (string) $validated['to'],
-            $taskId,
-        );
-
-        return response()->json([
-            'status'  => 'accepted',
-            'task_id' => $taskId,
-            'message' => 'Report generation started.',
-        ], 202);
-    }
-}
-```
-
-### 5.4 Live-демо
-
-```bash
-curl -i -X POST "http://localhost/api/v1/reports/account-statement" \
-  -H "Content-Type: application/json" \
-  -d '{"account_id":1,"from":"2026-01-01","to":"2026-01-31"}'
-```
-
-Ожидаем:
-
-- `HTTP/1.1 202 Accepted`
-- в JSON — `task_id`
-
-В логах контейнера:
-
-- `docker compose exec -T php sh -lc 'tail -n 50 storage/logs/laravel.log'`
-
-### 5.5 Что подчеркнуть
-
-- API всегда отвечает быстро (202).
-- Воркер очереди (из Модуля 5) уже поднят в `docker-compose` (`queue-worker`).
-- Дальнейший шаг в реальном проекте: endpoint статуса задачи / нотификации.
+- HTTP-ответ возвращается за десятки миллисекунд, тяжёлая работа — за пределами запроса. Это и есть то, ради чего вообще нужны очереди в API.
+- Воркер очереди уже поднят в `docker-compose` (`queue-worker`) — никаких ручных запусков на демо не требуется.
+- Реальный следующий шаг (вне этого урока): отдельный эндпоинт `GET /reports/{task_id}` со статусом задачи и ссылкой на готовый файл.
 
 ---
 
@@ -519,9 +442,24 @@ curl -i -X POST "http://localhost/api/v1/reports/account-statement" \
 
 ---
 
-## 9) Что НЕ трогаем во время демо
+## 9) Карта подготовленного кода под этот урок
 
-- Текущие реализации `AccountController`, `PaymentController`, `PaymentService`, `PaymentRepository` и тесты.
-- `PaymentResource` уже минималистичный — пример «жирного» JSON показываем только на доске.
-- `ReportsController`, `ExportAccountStatementJob`, `CurrencyController` и `throttle`-варианты — это **учебные** примеры из практики; внедрять в runtime под мит не обязательно.
+### Что уже добавлено в проект (можно сразу запускать)
+
+- `app/Http/Resources/PaymentFatResource.php` — «жирный» Resource (блок B).
+- `app/Http/Controllers/Api/V1/AccountController::paymentsFat()` — метод, который возвращает тот же список платежей через `PaymentFatResource` (блок B).
+- `app/Http/Controllers/Api/V1/ReportsController` — `generateAccountStatement()` (блок D).
+- `app/Jobs/ExportAccountStatementJob` — рабочий job с логированием и `sleep(3)` (блок D).
+- В `routes/api.php` добавлены роуты: `payments-cached`, `payments-fat`, `currencies`, `reports/account-statement`.
+
+### Что подготовлено как **пустые заглушки** под live-набор кода
+
+- `AccountController::paymentsCached()` — для блока A (HTTP-кеш для персональных данных). Я вживую дописываю `ETag` + `Cache-Control: private, max-age=15` + 304 на `If-None-Match`.
+- `App\Http\Controllers\Api\V1\CurrencyController::index()` — для блока A (публичный кеш). Я вживую дописываю возврат списка валют + `Cache-Control: public, max-age=3600`.
+
+### Что НЕ трогаем во время демо
+
+- Существующие реализации `AccountController::payments()`, `PaymentController`, `PaymentService`, `PaymentRepository`, `PaymentResource` и тесты.
+- Базовый эндпоинт `GET /api/v1/accounts/{account}/payments` — он остаётся «как есть», именно для контраста с `payments-cached` и `payments-fat`.
+- `RateLimiter` / `throttle` (блок C) — отдельный код добавлять под мит не нужно: `throttle` встроен во фреймворк, в runbook показана только конфигурация на роутах и через `RateLimiter::for(...)`.
 

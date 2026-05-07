@@ -1,7 +1,9 @@
 <?php
 
 use App\Http\Controllers\Api\V1\AccountController;
+use App\Http\Controllers\Api\V1\CurrencyController;
 use App\Http\Controllers\Api\V1\PaymentController;
+use App\Http\Controllers\Api\V1\ReportsController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -12,6 +14,15 @@ Route::get('/user', function (Request $request) {
 Route::prefix('v1')->group(function () {
     Route::get('accounts/{account}/payments', [AccountController::class, 'payments'])
         ->name('accounts.payments.index');
+
+    Route::get('accounts/{account}/payments-cached', [AccountController::class, 'paymentsCached'])
+        ->name('accounts.payments.cached');
+    Route::get('accounts/{account}/payments-fat', [AccountController::class, 'paymentsFat'])
+        ->name('accounts.payments.fat');
+    Route::get('currencies', [CurrencyController::class, 'index'])
+        ->name('currencies.index');
+    Route::post('reports/account-statement', [ReportsController::class, 'generateAccountStatement'])
+        ->name('reports.account-statement');
     Route::apiResource('payments', PaymentController::class)->except(['update']);
     Route::post('payments/demo-fail', [PaymentController::class, 'demoFail'])->name('payments.demo-fail');
     Route::apiResource('accounts', AccountController::class)->except(['update']);
