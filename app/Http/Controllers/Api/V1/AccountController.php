@@ -33,10 +33,6 @@ class AccountController extends Controller
         return AccountResource::collection($accounts);
     }
 
-
-    /**
-     * GET /api/v1/accounts/{account}/payments — список платежів рахунку (Модуль 9.1).
-     */
     public function payments(Account $account, AccountPaymentsIndexRequest $request): AnonymousResourceCollection
     {
         $query = AccountPaymentsQueryDTO::fromValidated($request->validated());
@@ -47,10 +43,21 @@ class AccountController extends Controller
 
     public function paymentsCached(Account $account, AccountPaymentsIndexRequest $request): JsonResponse
     {
-        return response()->json([
-            'data'    => [],
-            'message' => 'TODO: добавить ETag + Cache-Control private, max-age=15',
-        ]);
+        $query = AccountPaymentsQueryDTO::fromValidated($request->validated());
+    $payments = $this->paymentService->listPaymentsForAccount((int) $account->id, $query->getPerPage());
+
+    $payload = PaymentResource::collection($payments)->response()->getData(true);
+    $etag = '"' . sha1((string) json_encode($payload)) . '"';
+
+    if ($request->headers->get('If-None-Match') === $etag) {
+        return response()->json(null, 304)
+            ->header('ETag', $etag)
+            ->header('Cache-Control', 'private, max-age=15');
+    }
+
+    return response()->json($payload)
+        ->header('ETag', $etag)
+        ->header('Cache-Control', 'private, max-age=15');
     }
 
     public function paymentsFat(Account $account, AccountPaymentsIndexRequest $request): AnonymousResourceCollection
