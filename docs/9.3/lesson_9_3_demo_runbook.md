@@ -22,13 +22,13 @@
 ## 1) Pre-flight (до начала лекции)
 
 1. Проверить контейнеры:
-   - `docker compose ps`
+  - `docker compose ps`
 2. Проверить роуты:
-   - `docker compose exec -T php php artisan route:list --path=api/v1`
+  - `docker compose exec -T php php artisan route:list --path=api/v1`
 3. Проверить тесты на SQLite:
-   - `docker compose exec -T php php artisan test tests/Feature/Api/V1`
+  - `docker compose exec -T php php artisan test tests/Feature/Api/V1`
 4. Проверить, что Telescope работает (поставлен ещё в 9.2):
-   - `http://localhost/telescope/requests`
+  - `http://localhost/telescope/requests`
 
 Если Telescope/Debugbar по какой-то причине отсутствуют — используй блоки установки из `docs/9.2/lesson_9_2_demo_runbook.md`, секция «Установка Telescope / Debugbar».
 
@@ -70,6 +70,38 @@ public function payments(Account $account, AccountPaymentsIndexRequest $request)
 }
 ```
 
+**Что в этом методе нового именно по теме 9.3 (HTTP-кеш):**
+
+Базовая часть метода (DTO, сервис, `PaymentResource`) уже была сделана в 9.1 — её не разбираем, она здесь только чтобы получить тело ответа. Урок 9.3 добавляет три вещи поверх неё.
+
+1. **Считаем `ETag` — «отпечаток» текущего ответа.**
+  ```php
+   $payload = PaymentResource::collection($payments)->response()->getData(true);
+   $etag = '"' . sha1((string) json_encode($payload)) . '"';
+  ```
+   Берём финальный JSON, считаем от него SHA-1 и а в кавычки (так требует HTTP-стандарт: `ETag: "abc..."`). Идея простая: одинаковые данные → одинаковый ETag, изменился хотя бы один платёж → ETag другой. Это и есть «версия» ответа, которую клиент сможет сравнить.
+2. **Обрабатываем условный запрос `If-None-Match` → отдаём `304`.**
+  ```php
+   if ($request->headers->get('If-None-Match') === $etag) {
+       return response()->json(null, 304)
+           ->header('ETag', $etag)
+           ->header('Cache-Control', 'private, max-age=15');
+   }
+  ```
+   Клиент при повторном GET присылает прошлый ETag в заголовке `If-None-Match`. Если совпало — данные не менялись, и мы отвечаем `304 Not Modified` **без тела**: клиент возьмёт свою прошлую копию. Это и есть выигрыш HTTP-кеша — мы не сериализуем JSON и не гоним его по сети.
+3. **На полном ответе ставим `ETag` и `Cache-Control`.**
+  ```php
+   return response()->json($payload)
+       ->header('ETag', $etag)
+       ->header('Cache-Control', 'private, max-age=15');
+  ```
+  - `ETag` клиент сохранит и пришлёт в следующий раз — без него весь механизм 304 не работает.
+  - `Cache-Control: private, max-age=15` — политика кеша:
+    - `private` — кешировать можно **только на самом клиенте** (браузер, мобильное приложение). Прокси/CDN — нельзя, потому что список платежей **персональный**.
+    - `max-age=15` — 15 секунд клиент может использовать свою копию вообще не обращаясь к серверу. Для типичного UX (нажал «назад» / переключил вкладку) этого достаточно, при этом суммы не выглядят «протухшими».
+
+> Коротко: ETag даёт «дешёвые 304» для повторных запросов, а `Cache-Control` говорит клиенту, **кому** и **на сколько** разрешено кешировать.
+
 ### 2.3 Учебный `CurrencyController` для публичного кеша (по слайду)
 
 Для довідника валют пример с `public, max-age=3600`:
@@ -85,17 +117,40 @@ public function index(): \Illuminate\Http\JsonResponse
 }
 ```
 
+**Что в этом методе нового именно по теме 9.3 (HTTP-кеш):**
+
+Сама выдача справочника тривиальна (массив или `CurrencyService::getAll()` из 9.2). Урок 9.3 добавляет один заголовок — и именно его и обсуждаем.
+
+```php
+->header('Cache-Control', 'public, max-age=3600');
+```
+
+- `public` — кешировать разрешено **где угодно**: браузер, корпоративный прокси, CDN. Это безопасно, потому что справочник валют **не персонализирован** и не содержит чувствительных данных. Сравни с примером выше, где для платежей мы ставим `private` именно из-за персональности.
+- `max-age=3600` — час. До истечения этого срока клиенты и прокси даже **не будут** обращаться к нашему серверу за этим ресурсом — то есть мы выносим нагрузку за пределы приложения вообще.
+
+И ещё одна важная мысль на этом примере: **HTTP-кеш и серверный Redis-кеш — это разные слои**. Если внутри метода стоит `CurrencyService::getAll()` с `Cache::remember(...)` из 9.2, мы получаем двойной выигрыш:
+
+- HTTP-кеш гасит запросы **до** Laravel (клиент берёт из своей копии);
+- Redis-кеш гасит работу **внутри** Laravel, когда запрос всё-таки дошёл.
+
+Контраст двух примеров запомнить просто:
+
+- список платежей акаунта — `private, max-age=15` (личное, ненадолго);
+- справочник валют — `public, max-age=3600` (общее, надолго).
+
+Выбор `public/private` и `max-age` — это и есть основное практическое решение по HTTP-кешу для каждого endpoint-а.
+
 ### 2.4 Live-демо (можно показать без правки кода)
 
 Показываем заголовки прямо у текущего endpoint:
 
 1. Создаём аккаунт (если ещё нет id):
-   - `curl -s -X POST http://localhost/api/v1/accounts -H "Content-Type: application/json" -d '{"balance":"5000.00"}'`
+  - `curl -s -X POST http://localhost/api/v1/accounts -H "Content-Type: application/json" -d '{"balance":"5000.00"}'`
 2. Смотрим заголовки ответа:
-   - `curl -i "http://localhost/api/v1/accounts/ID/payments?per_page=20"`
+  - `curl -i "http://localhost/api/v1/accounts/ID/payments?per_page=20"`
 3. Подсветить:
-   - сейчас нет `Cache-Control` → каждый запрос идёт «полностью»;
-   - после добавления `private, max-age=15` повторные запросы UI могут отдаваться из локального кеша.
+  - сейчас нет `Cache-Control` → каждый запрос идёт «полностью»;
+  - после добавления `private, max-age=15` повторные запросы UI могут отдаваться из локального кеша.
 
 ### 2.5 Что подчеркнуть
 
@@ -164,10 +219,10 @@ public function toArray(Request $request): array
 
 1. Открыть `http://localhost/telescope/requests`.
 2. Выполнить:
-   - `for i in {1..3}; do curl -s "http://localhost/api/v1/accounts/ID/payments?per_page=50" > /dev/null; done`
+  - `for i in {1..3}; do curl -s "http://localhost/api/v1/accounts/ID/payments?per_page=50" > /dev/null; done`
 3. В Telescope посмотреть:
-   - размер ответа (`Content-Length` или примерный размер тела);
-   - количество SQL.
+  - размер ответа (`Content-Length` или примерный размер тела);
+  - количество SQL.
 4. Идея демо: «уменьшение ответа = уменьшение времени сериализации и сети, особенно при большом `per_page`».
 
 ---
@@ -180,7 +235,22 @@ public function toArray(Request $request): array
 - Разные эндпоинты — разные лимиты (обычные API и «тяжёлые» отчёты).
 - 429 — это **нормальный** ответ, фронт должен показать сообщение и retry/backoff.
 
-### 4.2 Учебный пример настройки (точечно в `routes/api.php`)
+### 4.2 Что такое `throttle` и нужно ли его создавать
+
+**Своё middleware создавать не нужно.** `throttle` — это встроенный alias на класс `Illuminate\Routing\Middleware\ThrottleRequests` (в API-стеке Laravel 11/12 — `ThrottleRequestsWithRedis`). Он зарегистрирован фреймворком и доступен «из коробки»: достаточно просто навесить его на маршруты.
+
+Под капотом он:
+
+- определяет ключ клиента (для гостя — IP, для авторизованного — id пользователя или токена Sanctum);
+- инкрементирует счётчик в кеше (`config/cache.php`, обычно Redis в этом проекте);
+- сравнивает с лимитом, на превышении возвращает `429 Too Many Requests` + `Retry-After`;
+- на любом ответе ставит `X-RateLimit-Limit` и `X-RateLimit-Remaining`.
+
+То есть `throttle` сам по себе — **не сервис**, не конфиг, не ваш файл; это middleware Laravel. Создавать новые классы под него не нужно.
+
+### 4.3 Способ 1 — `throttle:N,M` прямо на маршрутах (минимум кода)
+
+Самый простой способ — указать лимит как параметры алиаса прямо в `routes/api.php`:
 
 ```php
 Route::prefix('v1')->group(function () {
@@ -198,7 +268,67 @@ Route::prefix('v1')->group(function () {
 });
 ```
 
-### 4.3 Live-демо лимита (без правки кода — учебная демонстрация)
+Что значат параметры:
+
+- `throttle:60,1` → 60 запросов за 1 минуту;
+- `throttle:5,1` → 5 запросов за 1 минуту (для тяжёлых отчётов).
+
+Ключ группировки выбирается автоматически: для гостя — IP, для авторизованного — `Auth::id()`.
+
+### 4.4 Способ 2 — именованный `RateLimiter` (рекомендуется для production)
+
+Когда нужно больше гибкости (разные ключи, разные лимиты для гостя/юзера, кастомный ответ), Laravel предлагает регистрировать **именованные limiter-ы** через фасад `RateLimiter`. Это **встроенный механизм фреймворка**, своих классов писать не надо.
+
+В `app/Providers/AppServiceProvider.php` (метод `boot`):
+
+```php
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\RateLimiter;
+
+public function boot(): void
+{
+    RateLimiter::for('api', function (Request $request): Limit {
+        return $request->user()
+            ? Limit::perMinute(120)->by((string) $request->user()->id)
+            : Limit::perMinute(30)->by((string) $request->ip());
+    });
+
+    RateLimiter::for('reports', function (Request $request): Limit {
+        return Limit::perMinute(5)->by((string) ($request->user()?->id ?? $request->ip()));
+    });
+}
+```
+
+Тогда в `routes/api.php` достаточно сослаться на имя:
+
+```php
+Route::middleware('throttle:api')->group(function () {
+    Route::get('accounts/{account}/payments', [AccountController::class, 'payments']);
+});
+
+Route::middleware('throttle:reports')->group(function () {
+    Route::post('reports/account-statement', [ReportsController::class, 'generateAccountStatement']);
+});
+```
+
+Что это даёт:
+
+- разные лимиты для гостя и авторизованного на одном и том же эндпоинте;
+- единая точка правды (поправил в `AppServiceProvider` — изменилось везде);
+- можно делать `Limit::perMinute(...)`, `Limit::perHour(...)`, цепочки лимитов (`return [Limit::perMinute(60), Limit::perDay(1000)];`), кастомный `response(...)` на 429.
+
+### 4.5 Это единственный способ?
+
+Нет. На практике встречаются три уровня:
+
+1. **`throttle:N,M` в роутах** — быстрый минимум, для уроков и небольших API.
+2. **`RateLimiter::for(...)` + `throttle:имя`** — стандартный production-подход в Laravel.
+3. **Внешний слой (Nginx, Cloudflare, API Gateway, AWS WAF)** — лимиты до того, как запрос вообще дошёл до PHP. Это не замена throttle в Laravel, а **дополнительный** контур: внешний слой режет грубые атаки, Laravel — бизнес-логику и пользовательские лимиты.
+
+Своё middleware с нуля писать имеет смысл только если у вас совсем нестандартная логика (например, лимит по конкретному телу запроса). В 95% случаев хватает встроенного `throttle` + `RateLimiter::for(...)`.
+
+### 4.6 Live-демо лимита (без правки кода — учебная демонстрация)
 
 Покажи реакцию на превышение лимита (если временно ограничить, например, до `throttle:3,1`):
 
@@ -211,14 +341,16 @@ done
 Ожидаем: после нескольких 200 — `429 Too Many Requests`.
 
 В заголовках:
+
 - `X-RateLimit-Limit`
 - `X-RateLimit-Remaining`
 - `Retry-After` (на 429)
 
-### 4.4 Что подчеркнуть
+### 4.7 Что подчеркнуть
 
 - Лимиты для авторизации и тяжёлых отчётов всегда жёстче.
 - Без лимитов один клиент может «положить» API.
+- В production почти всегда используют именно **именованные** limiter-ы через `RateLimiter::for(...)`, а не голые `throttle:60,1` в роутах — это и удобнее поддерживать, и точнее по бизнес-смыслу.
 
 ---
 
@@ -334,10 +466,12 @@ curl -i -X POST "http://localhost/api/v1/reports/account-statement" \
 ```
 
 Ожидаем:
+
 - `HTTP/1.1 202 Accepted`
 - в JSON — `task_id`
 
 В логах контейнера:
+
 - `docker compose exec -T php sh -lc 'tail -n 50 storage/logs/laravel.log'`
 
 ### 5.5 Что подчеркнуть
@@ -366,11 +500,11 @@ curl -i -X POST "http://localhost/api/v1/reports/account-statement" \
 ## 7) Тесты и логи в конце демо
 
 1. Прогнать API-набор (SQLite):
-   - `docker compose exec -T php php artisan test tests/Feature/Api/V1`
+  - `docker compose exec -T php php artisan test tests/Feature/Api/V1`
 2. Логи:
-   - `docker compose exec -T php sh -lc 'tail -n 100 storage/logs/laravel.log'`
+  - `docker compose exec -T php sh -lc 'tail -n 100 storage/logs/laravel.log'`
 3. Очереди (если показывали jobs):
-   - `docker compose logs queue-worker --tail=50`
+  - `docker compose logs queue-worker --tail=50`
 
 ---
 
@@ -379,9 +513,9 @@ curl -i -X POST "http://localhost/api/v1/reports/account-statement" \
 1. `docker compose exec -T php php artisan config:clear`
 2. `docker compose exec -T php php artisan route:list --path=api/v1`
 3. Открыть и обновить:
-   - `http://localhost/telescope/requests`
+  - `http://localhost/telescope/requests`
 4. Сделать один прогон:
-   - `curl -i "http://localhost/api/v1/accounts/1/payments?per_page=10"`
+  - `curl -i "http://localhost/api/v1/accounts/1/payments?per_page=10"`
 
 ---
 
@@ -390,3 +524,4 @@ curl -i -X POST "http://localhost/api/v1/reports/account-statement" \
 - Текущие реализации `AccountController`, `PaymentController`, `PaymentService`, `PaymentRepository` и тесты.
 - `PaymentResource` уже минималистичный — пример «жирного» JSON показываем только на доске.
 - `ReportsController`, `ExportAccountStatementJob`, `CurrencyController` и `throttle`-варианты — это **учебные** примеры из практики; внедрять в runtime под мит не обязательно.
+
