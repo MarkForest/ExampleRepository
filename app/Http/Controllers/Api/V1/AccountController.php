@@ -41,31 +41,31 @@ class AccountController extends Controller
         return PaymentResource::collection($payments);
     }
 
-    public function paymentsCached(Account $account, AccountPaymentsIndexRequest $request): JsonResponse
-    {
-        $query = AccountPaymentsQueryDTO::fromValidated($request->validated());
-    $payments = $this->paymentService->listPaymentsForAccount((int) $account->id, $query->getPerPage());
-
-    $payload = PaymentResource::collection($payments)->response()->getData(true);
-    $etag = '"' . sha1((string) json_encode($payload)) . '"';
-
-    if ($request->headers->get('If-None-Match') === $etag) {
-        return response()->json(null, 304)
-            ->header('ETag', $etag)
-            ->header('Cache-Control', 'private, max-age=15');
-    }
-
-    return response()->json($payload)
-        ->header('ETag', $etag)
-        ->header('Cache-Control', 'private, max-age=15');
-    }
-
     public function paymentsFat(Account $account, AccountPaymentsIndexRequest $request): AnonymousResourceCollection
     {
         $query = AccountPaymentsQueryDTO::fromValidated($request->validated());
         $payments = $this->paymentService->listPaymentsForAccount((int) $account->id, $query->getPerPage());
 
         return PaymentFatResource::collection($payments);
+    }
+
+    public function paymentsCached(Account $account, AccountPaymentsIndexRequest $request): JsonResponse
+    {
+        $query = AccountPaymentsQueryDTO::fromValidated($request->validated());
+        $payments = $this->paymentService->listPaymentsForAccount((int)$account->id, $query->getPerPage());
+
+        $payload = PaymentResource::collection($payments)->response()->getData(true);
+        $etag = '"' . sha1((string)json_encode($payload)) . '"';
+
+        if ($request->headers->get('If-None-Match') === $etag) {
+            return response()->json(null, 304)
+                ->header('ETag', $etag)
+                ->header('Cache-Control', 'private, max-age=15');
+        }
+
+        return response()->json($payload)
+            ->header('ETag', $etag)
+            ->header('Cache-Control', 'private, max-age=15');
     }
 
     public function store(AccountStoreRequest $request): JsonResponse

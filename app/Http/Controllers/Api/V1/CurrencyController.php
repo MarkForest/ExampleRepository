@@ -11,9 +11,8 @@ final class CurrencyController extends Controller
 {
     public function index(): JsonResponse
     {
-        return response()->json([
-            'data'    => [],
-            'message' => 'TODO: вернуть валюты + Cache-Control: public, max-age=3600',
-        ]);
+        $currencies = ['USD', 'EUR'];
+        return response()->json(['data' => $currencies])
+            ->header('Cache-Control', 'public, max-age=3600');
     }
 }

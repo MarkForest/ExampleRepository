@@ -12,19 +12,32 @@ Route::get('/user', function (Request $request) {
 })->middleware('auth:sanctum');
 
 Route::prefix('v1')->group(function () {
-    Route::get('accounts/{account}/payments', [AccountController::class, 'payments'])
-        ->name('accounts.payments.index');
 
-    Route::get('accounts/{account}/payments-cached', [AccountController::class, 'paymentsCached'])
-        ->name('accounts.payments.cached');
-    Route::get('accounts/{account}/payments-fat', [AccountController::class, 'paymentsFat'])
-        ->name('accounts.payments.fat');
+    Route::middleware('throttle:api-without-cache')->group(function () {
+        Route::get('accounts/{account}/payments', [AccountController::class, 'payments'])
+            ->name('accounts.payments.index');
+        Route::get('accounts/{account}/payments-fat', [AccountController::class, 'paymentsFat'])
+            ->name('accounts.payments.fat');
+    });
+
+    Route::middleware('throttle:api-with-cache')->group(function () {
+        Route::get('accounts/{account}/payments-cached', [AccountController::class, 'paymentsCached'])
+            ->name('accounts.payments.cached');
+        Route::post('payments/demo-fail', [PaymentController::class, 'demoFail'])->name('payments.demo-fail');
+    });
+
+    Route::middleware('throttle:reports')->group(function () {
+        Route::post('reports/account-statement', [ReportsController::class, 'generateAccountStatement'])
+            ->name('reports.account-statement');
+    });
+
+
     Route::get('currencies', [CurrencyController::class, 'index'])
         ->name('currencies.index');
-    Route::post('reports/account-statement', [ReportsController::class, 'generateAccountStatement'])
-        ->name('reports.account-statement');
+
+
+
     Route::apiResource('payments', PaymentController::class)->except(['update']);
-    Route::post('payments/demo-fail', [PaymentController::class, 'demoFail'])->name('payments.demo-fail');
     Route::apiResource('accounts', AccountController::class)->except(['update']);
     Route::get('/test-sentry', static function (): void {
         throw new RuntimeException('Test Sentry integration - Wake up Neo');
