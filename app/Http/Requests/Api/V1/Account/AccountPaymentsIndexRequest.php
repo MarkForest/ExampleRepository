@@ -21,7 +21,7 @@ class AccountPaymentsIndexRequest extends FormRequest
     {
         return [
             'page'     => ['nullable', 'integer', 'min:1'],
-            'per_page' => ['nullable', 'integer', 'min:1', 'max:20000'],
+            'per_page' => ['nullable', 'integer', 'min:1', 'max:100'],
         ];
     }
 }
