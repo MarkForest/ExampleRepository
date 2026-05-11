@@ -19,6 +19,7 @@ class AuthController
             'email' => ['required', 'email', 'unique:users,email'],
             'password' => ['required', 'string', 'min:8'],
         ]);
+        /** @var User $user */
         $user = User::create([
             'name' => $data['name'],
             'email' => $data['email'],
