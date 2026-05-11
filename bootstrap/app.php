@@ -2,6 +2,7 @@
 
 use App\Exceptions\Api\V1\InsufficientFundsException;
 use App\Http\Middleware\AssignCorrelationId;
+use Illuminate\Auth\AuthenticationException;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Foundation\Application;
@@ -31,6 +32,14 @@ return Application::configure(basePath: dirname(__DIR__))
                     'message' => 'Validation error Custom',
                     'errors' => $e->errors(),
                 ], 422);
+            }
+        });
+
+        $exceptions->render(function (AuthenticationException $e, Request $request) {
+            if ($request->is('api/*')) {
+                return response()->json([
+                    'message' => 'Unauthenticated.',
+                ], 401);
             }
         });
 

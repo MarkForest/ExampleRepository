@@ -6,12 +6,23 @@ use App\Http\Controllers\Api\V1\PaymentController;
 use App\Http\Controllers\Api\V1\ReportsController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Api\V1\AuthController;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
 })->middleware('auth:sanctum');
 
 Route::prefix('v1')->group(function () {
+
+    Route::middleware('throttle:auth')->group(function () {
+        Route::post('auth/register', [AuthController::class, 'register'])->name('auth.register');
+        Route::post('auth/login', [AuthController::class, 'login'])->name('auth.login');
+    });
+
+    Route::middleware('auth:sanctum')->group(function () {
+        Route::get('auth/me', [AuthController::class, 'me'])->name('auth.me');
+        Route::post('auth/logout', [AuthController::class, 'logout'])->name('auth.logout');
+    });
 
     Route::middleware('throttle:api-without-cache')->group(function () {
         Route::get('accounts/{account}/payments', [AccountController::class, 'payments'])
@@ -46,5 +57,4 @@ Route::prefix('v1')->group(function () {
     Route::get('/sentry-test', function () {
         throw new Exception('Test Sentry error - Wake up Neo');
     })->name('sentry.test');
-
 });
