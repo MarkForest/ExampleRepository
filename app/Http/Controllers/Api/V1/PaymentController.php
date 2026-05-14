@@ -11,6 +11,8 @@ use App\Http\Resources\PaymentResource;
 use App\Models\Payment;
 use App\Services\Api\V1\PaymentService;
 use App\Services\Monitoring\PaymentErrorReporter;
+use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\Request;
@@ -19,26 +21,43 @@ use Throwable;
 
 class PaymentController extends Controller
 {
+    use AuthorizesRequests;
+
     public function __construct(
         private readonly PaymentService $paymentService,
         private readonly PaymentErrorReporter $paymentErrorReporter
     ) {}
 
     /**
-     * Display a listing of payments.
+     * @throws AuthorizationException
      */
     public function index(): AnonymousResourceCollection
     {
-        $payments = Payment::query()->latest()->paginate(20);
+        $this->authorize('viewAny', Payment::class);
 
+        $payments = Payment::query()->latest()->paginate(20);
+        return PaymentResource::collection($payments);
+    }
+
+    /**
+     * @throws AuthorizationException
+     */
+    public function adminIndex(Request $request): AnonymousResourceCollection
+    {
+        $this->authorize('view-all-payments');
+
+        $payments = Payment::query()->latest()->paginate(50);
         return PaymentResource::collection($payments);
     }
 
     /**
      * Store a newly created payment.
+     * @throws AuthorizationException
      */
     public function store(PaymentStoreRequest $request): JsonResponse
     {
+        $this->authorize('create', Payment::class);
+
         try {
             $dto = CreatePaymentDTO::fromArray($request->validated());
             $payment = $this->paymentService->createPayment($dto);
@@ -62,23 +81,23 @@ class PaymentController extends Controller
 
     /**
      * Display the specified payment.
+     * @throws AuthorizationException
      */
-    public function show(int $id): JsonResponse
+    public function show(Payment $payment): JsonResponse
     {
-        $payment = $this->paymentService->findById($id);
-
-        if ($payment === null) {
-            abort(404);
-        }
+        $this->authorize('view', $payment);
 
         return response()->json(['data' => new PaymentResource($payment)]);
     }
 
     /**
      * Remove the specified payment.
+     * @throws AuthorizationException
      */
     public function destroy(Payment $payment): JsonResponse
     {
+        $this->authorize('delete', $payment);
+
         $this->paymentService->deletePayment($payment);
 
         return response()->json(null, 204);

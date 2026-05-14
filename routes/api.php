@@ -20,6 +20,8 @@ Route::prefix('v1')->group(function () {
     });
 
     Route::middleware('auth:sanctum')->group(function () {
+        Route::apiResource('payments', PaymentController::class)->except(['update']);
+        Route::apiResource('accounts', AccountController::class)->except(['update']);
         Route::get('auth/me', [AuthController::class, 'me'])->name('auth.me');
         Route::post('auth/logout', [AuthController::class, 'logout'])->name('auth.logout');
     });
@@ -46,10 +48,6 @@ Route::prefix('v1')->group(function () {
     Route::get('currencies', [CurrencyController::class, 'index'])
         ->name('currencies.index');
 
-
-
-    Route::apiResource('payments', PaymentController::class)->except(['update']);
-    Route::apiResource('accounts', AccountController::class)->except(['update']);
     Route::get('/test-sentry', static function (): void {
         throw new RuntimeException('Test Sentry integration - Wake up Neo');
     })->name('test.sentry');

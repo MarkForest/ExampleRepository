@@ -6,10 +6,12 @@ namespace App\Providers;
 
 use App\Contracts\Repositories\AccountRepositoryInterface;
 use App\Contracts\Repositories\PaymentRepositoryInterface;
+use App\Models\User;
 use App\Repositories\AccountRepository;
 use App\Repositories\PaymentRepository;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Tests\Mocks\AccountRepositoryMock;
@@ -55,6 +57,10 @@ class AppServiceProvider extends ServiceProvider
 
         RateLimiter::for('auth', function (Request $request): Limit {
             return Limit::perMinute(10)->by((string) $request->ip());
+        });
+
+        Gate::define('view-all-payments', static function (User $user): bool {
+            return $user->is_admin;
         });
     }
 }
